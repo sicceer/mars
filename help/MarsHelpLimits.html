@@ -1,18 +1,18 @@
 <html>
-<title>MARS 4.3 help contents
+<title>MARS 4.4 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.3</h4>
-<h4>January 2013</h4>
+<h4>Release 4.4</h4>
+<h4>August 2013</h4>
 
 <h4>Operating Requirements</h4>
 </center>
 <p>MARS is written in Java and 
 requires at least Release 1.5 of the J2SE Java Runtime Environment (JRE) to work.  
 The graphical IDE is implemented using Swing. It has been 
-tested on Windows XP and Vista, Mac OS X, and is also being used under Linux.
+tested on Windows XP, Vista and 7; Mac OS X; and is also being used under Linux.
 
 <center>
 <h4>Some MARS Assembler and Simulator Limitations</h4>
@@ -23,13 +23,11 @@ textbook <i>Computer Organization and Design, Fourth Edition</i> by Patterson an
 Elsevier - Morgan Kaufmann, 2009.  All basic and pseudo instructions, directives,
 and system services described in Appendix B are implemented.
  
-<p>Limitations of MARS as of Release 4.3 include:
+<p>Limitations of MARS as of Release 4.4 include:
 <ul>
 <li>Memory segments (text, data, stack, kernel text, kernel data) are limited to 4MB each starting at their
 respective base addresses.</li>
 <li>There is no pipelined mode (but delayed branching is supported).</li>
-<li>Self-modifying code is not supported.  This is a program that during
-execution modifies the contents of its own text segment (binary instructions).</li>
 <li>If you open a file which is a link or shortcut to another file, MARS will <em>not</em>
 open the target file.  The file open dialog is implemented using Java Swing's JFileChooser, 
 which does not support links.</li>

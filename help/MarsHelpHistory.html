@@ -4,10 +4,33 @@
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.3</h4>
-<h4>January 2013</h4>
+<h4>Release 4.4</h4>
+<h4>August 2013</h4>
 <h4>MARS Release History</h4>
 </center>
+
+<p>Mars 4.4 was released in August 2013.  Enhancements and bug fixes include:
+<ul>
+<li>A feature to support self-modifying code has been developed by Carl Burch 
+(Hendrix College) and Pete Sanderson.  It is disabled by default
+and can be enabled through a Settings menu option.  A program can write to the
+text segment and can also branch/jump to any user address in the data segments
+within the limits of the simulated address space.  Text segment contents 
+can also be edited interactively using the Data Segment window, and text
+segment contents within the address range of existing code can be edited
+interactively using the Text Segment window.  In command mode, the smc option
+permits a program to write and execute in both text and data segments.
+</li>
+<li>Bug fix: An assembly error occurred when a line within a macro contained both 
+a macro parameter and an identifier defined to have an .eqv substitution.
+</li>
+<li>Bug fix: If a macro name was used as a macro parameter, an assembly error occurred in some situations
+when a macro being used as an argument was defined following the macro that
+defined the parameter.  The "for" macro described in the Macro help tab is
+an example.
+</li>
+</ul>
+</p>
 
 <p>Mars 4.3 was released in January 2013.  Enhancements and bug fixes include:
 <ul>
@@ -698,7 +721,7 @@ publicized during a poster presentation at SIGCSE 2005.
 implementation.  Sanderson implemented the assembler and simulator that summer, and 
 the basic GUI the following summer, 2004.  
 
-<p>The development of Releases 3.1 and 3.2 during fall 2006 was supported by the Otterbein College
+<p>The development of Releases 3.1 and 3.2 in 2006 and 4.0 in 2010 were supported by the Otterbein College
 sabbatical leave program.  The development of Release 3.7 during summer 2009 was supported by
 a SIGCSE Special Projects Grant.
 

@@ -4,7 +4,7 @@
 <body>
 <center>
 <h3>MARS Acknowledgements</h3>
-<font size="-1">Updated 3 January 2013</font>
+<font size="-1">Updated 16 July 2013</font>
 </center>
 
 <p>
@@ -13,10 +13,15 @@ It has succeeded beyond our wildest expectations and for this we are most gratef
 Its success would not be possible without your feedback, suggestions and assistance!
 
 <p>
-We are pleased to recognize these contributions to release 4.3:
+We are pleased to recognize these contributions to release 4.4:
 <ul>
-<li><b>Mohammad Sekhavat</b>, a student from Sharif University, who developed the
-macro capability.  We think you will find it quite useful.
+<li><b>Carl Burch</b> of Hendrix College, who developed the mechanism for 
+simulating the execution of binary code.  The runtime simulator depends on
+ProgramStatement objects to represent each instruction, and Carl wrote the
+algorithms to produce usable and correct ProgramStatement objects from 32 bit integer
+values.  This, combined with the added capabilities to write to the text segment and
+branch/jump into the data segment at runtime, permits one to produce self-modifying
+programs, simulate buffer overflow attacks, and the like.
 </li>
 
 </ul>
@@ -28,8 +33,12 @@ We also appreciate the contributions others have made to previous releases:
 <ul>
 
 <li><b>Tom Bradford</b>, <b>Slava Pestov</b> and others, who developed the jEdit Syntax Package (syntax.jedit.org)
-at the heart of the syntax-aware color highlighting editor.  It is old but the licensing is right and it was
+at the heart of the syntax-aware color highlighting editor.  It was old but the licensing was right and it was
 written for embedding into Java applications.
+</li>
+
+<li><b>Mohammad Sekhavat</b> from Sharif University in Tehran, who developed the
+macro capability.  
 </li>
 
 <li><b>Greg Gibeling</b> of UC Berkeley, who introduced capabilities into his customized version

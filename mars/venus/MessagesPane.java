@@ -143,9 +143,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                            String fileName = "";
                            if (fileNameStart < fileNameEnd && fileNameStart >= ErrorList.FILENAME_PREFIX.length()) {
                               fileName = text.substring(fileNameStart, fileNameEnd).trim();
-                           }
-                           selectEditorTextLine(fileName, line, column);
-                           selectErrorMessage(fileName, line, column);                        
+                           } 
+                           if (fileName != null && fileName.length() > 0) {
+                              selectEditorTextLine(fileName, line, column);
+                              selectErrorMessage(fileName, line, column);    
+                           }                    
                         }
                      }
                   }
@@ -281,7 +283,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                		   // only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
                }
          }
-			assemble.setCaretPosition(assemble.getDocument().getLength());
+         assemble.setCaretPosition(assemble.getDocument().getLength());
          setSelectedComponent(assembleTab);
       }
    	

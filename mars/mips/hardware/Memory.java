@@ -371,10 +371,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             oldValue = storeBytesInTable(stackBlockTable, relativeByteAddress, length, value);
          } 
          else if (inTextSegment(address)) {
-           // DEVELOPER: PLEASE USE setStatement() TO WRITE TO TEXT SEGMENT...
-            throw new AddressErrorException(
-               "DEVELOPER: You must use setStatement() to write to text segment!", 
-               Exceptions.ADDRESS_EXCEPTION_STORE, address);
+           // Burch Mod (Jan 2013): replace throw with call to setStatement 
+           // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+         
+            if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+               ProgramStatement oldStatement = getStatementNoNotify(address);
+               if (oldStatement != null) {
+                  oldValue = oldStatement.getBinaryStatement();
+               }
+               setStatement(address, new ProgramStatement(value, address));
+            } 
+            else {
+               throw new AddressErrorException(
+                  "Cannot write directly to text segment!", 
+                  Exceptions.ADDRESS_EXCEPTION_STORE, address);
+            }
          } 
          else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
            // memory mapped I/O.
@@ -429,12 +440,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             relative = (stackBaseAddress - address) >> 2; // convert byte address to words
             oldValue = storeWordInTable(stackBlockTable, relative, value);
          }
-         else if (inTextSegment(address)) {
-           // DEVELOPER: PLEASE USE setStatement() TO WRITE TO TEXT SEGMENT...
-            throw new AddressErrorException(
-               	"DEVELOPER: You must use setStatement() to write to text segment!", 
-               	Exceptions.ADDRESS_EXCEPTION_STORE, address);
-         }  
+         else if (inTextSegment(address)) {	
+           // Burch Mod (Jan 2013): replace throw with call to setStatement 
+           // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+               ProgramStatement oldStatement = getStatementNoNotify(address);
+               if (oldStatement != null) {
+                  oldValue = oldStatement.getBinaryStatement();
+               }
+               setStatement(address, new ProgramStatement(value, address));
+            } 
+            else {
+               throw new AddressErrorException(
+                  "Cannot write directly to text segment!", 
+                  Exceptions.ADDRESS_EXCEPTION_STORE, address);
+            }
+         } 
          else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
            // memory mapped I/O.
             relative = (address - memoryMapBaseAddress) >> 2; // convert byte address to word
@@ -603,10 +624,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             value = fetchBytesFromTable(memoryMapBlockTable, relativeByteAddress, length);
          }
          else if (inTextSegment(address)) {
-           // DEVELOPER: PLEASE USE getStatement() TO READ FROM TEXT SEGMENT...
-            throw new AddressErrorException(
-               "DEVELOPER: You must use getStatement() to read from text segment!", 
-               Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+           // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement 
+           // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+               ProgramStatement stmt = getStatementNoNotify(address);
+               value = stmt == null ? 0 : stmt.getBinaryStatement();
+            } 
+            else {
+               throw new AddressErrorException(
+                  "Cannot read directly from text segment!", 
+                  Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+            }
          } 
          else if (inKernelDataSegment(address)) {
            // in kernel data segment.  Will read one byte at a time, w/o regard to boundaries.
@@ -668,10 +696,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             value = fetchWordFromTable(memoryMapBlockTable, relative);
          }
          else if (inTextSegment(address)) {
-           // DEVELOPER: PLEASE USE getStatement() TO READ FROM TEXT SEGMENT...
-            throw new AddressErrorException(
-                    "DEVELOPER: You must use getStatement() to read from text segment!",
-               	  Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+           // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement 
+           // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+               ProgramStatement stmt = getStatementNoNotify(address);
+               value = stmt == null ? 0 : stmt.getBinaryStatement();
+            } 
+            else {
+               throw new AddressErrorException(
+                  "Cannot read directly from text segment!", 
+                  Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+            }
          }  
          else if (inKernelDataSegment(address)) {
            // in kernel data segment
@@ -851,6 +886,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     **/
    
        public ProgramStatement getStatement(int address) throws AddressErrorException {
+         return getStatement(address, true);
+      	/*
          if (address % 4 != 0 || !(inTextSegment(address) || inKernelTextSegment(address))) {
             throw new AddressErrorException(
                "fetch address for text segment out of range or not aligned to word boundary ",
@@ -862,6 +899,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          else {
             return readProgramStatement(address, kernelTextBaseAddress, kernelTextBlockTable,true);
          }
+      	*/
       }
    
    ////////////////////////////////////////////////////////////////////////////////
@@ -874,6 +912,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     **/
    
        public ProgramStatement getStatementNoNotify(int address) throws AddressErrorException {
+         return getStatement(address, false);
+      	/*
          if (address % 4 != 0 || !(inTextSegment(address) || inKernelTextSegment(address))) {
             throw new AddressErrorException(
                "fetch address for text segment out of range or not aligned to word boundary ",
@@ -885,8 +925,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          else {
             return readProgramStatement(address, kernelTextBaseAddress, kernelTextBlockTable, false);
          }
+      	*/
       }
    
+   //////////
+   
+       private ProgramStatement getStatement(int address, boolean notify) throws AddressErrorException {
+         if (!wordAligned(address)) {
+            throw new AddressErrorException(
+               "fetch address for text segment not aligned to word boundary ",
+               Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+         }
+         if (!Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)
+          && !(inTextSegment(address) || inKernelTextSegment(address))) {
+            throw new AddressErrorException(
+               "fetch address for text segment out of range ",
+               Exceptions.ADDRESS_EXCEPTION_LOAD, address);
+         }
+         if (inTextSegment(address)) 
+            return readProgramStatement(address, textBaseAddress, textBlockTable, notify);
+         else if (inKernelTextSegment(address)) 
+            return readProgramStatement(address, kernelTextBaseAddress, kernelTextBlockTable, notify);
+         else 
+            return new ProgramStatement(get(address, WORD_LENGTH_BYTES), address);
+      }
    		
    		
    /*********************************  THE UTILITIES  *************************************/ 
@@ -986,7 +1048,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          return  address >= memoryMapBaseAddress && address < kernelHighAddress;
       }   
    
-
+   
    
    
    	
@@ -1157,14 +1219,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    // Method to notify any observers of memory operation that has just occurred.
    //
    // The "|| Globals.getGui()==null" is a hack added 19 July 2012 DPS.  IF MIPS simulation
-	// is from command mode, Globals.program is null but still want ability to observe.
+   // is from command mode, Globals.program is null but still want ability to observe.
        private void notifyAnyObservers(int type, int address, int length, int value) {
          if ((Globals.program != null || Globals.getGui()==null) && this.observables.size() > 0) {
             Iterator it = this.observables.iterator();
             MemoryObservable mo;
             while (it.hasNext()) {
                mo = (MemoryObservable)it.next();
-               if (mo.match(address)) { 
+               if (mo.match(address)) {
                   mo.notifyObserver(new MemoryAccessNotice(type, address, length, value));
                }
             }

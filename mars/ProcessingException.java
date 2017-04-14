@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  **/
 
-   public class ProcessingException extends Exception {  
+    public class ProcessingException extends Exception {  
       private ErrorList errs;
    
    /**
@@ -48,8 +48,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param e An ErrorList which is an ArrayList of ErrorMessage objects.  Each ErrorMessage
     * represents one processing error.
     **/
-      public ProcessingException(ErrorList e) {
+       public ProcessingException(ErrorList e) {
          errs = e;
+      }
+   	
+   /**
+    * Constructor for ProcessingException.
+    * 
+    * @param e An ErrorList which is an ArrayList of ErrorMessage objects.  Each ErrorMessage
+    * represents one processing error.
+    * @param aee AddressErrorException object containing specialized error message, cause, address
+    **/
+       public ProcessingException(ErrorList e, AddressErrorException aee) {
+         errs = e;
+         Exceptions.setRegisters(aee.getType(), aee.getAddress());
       }
    
    /**
@@ -58,7 +70,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param ps a ProgramStatement of statement causing runtime exception
     * @param m a String containing specialized error message
     **/
-      public ProcessingException(ProgramStatement ps, String m) {
+       public ProcessingException(ProgramStatement ps, String m) {
          errs = new ErrorList();
          errs.add(new ErrorMessage(ps, "Runtime exception at "+
             Binary.intToHexString(RegisterFile.getProgramCounter()-Instruction.INSTRUCTION_LENGTH)+ 
@@ -78,7 +90,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param m a String containing specialized error message
     * @param cause exception cause (see Exceptions class for list)
     **/
-      public ProcessingException(ProgramStatement ps, String m, int cause) {
+       public ProcessingException(ProgramStatement ps, String m, int cause) {
          this(ps,m);
          Exceptions.setRegisters(cause);
       }
@@ -91,7 +103,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param aee AddressErrorException object containing specialized error message, cause, address
     **/
    
-      public ProcessingException(ProgramStatement ps, AddressErrorException aee) {
+       public ProcessingException(ProgramStatement ps, AddressErrorException aee) {
          this(ps, aee.getMessage());
          Exceptions.setRegisters(aee.getType(), aee.getAddress());
       }
@@ -102,7 +114,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * No parameter and thus no error list.  Use this for normal MIPS
     * program termination (e.g. syscall 10 for exit).
     **/
-      public ProcessingException() {
+       public ProcessingException() {
          errs = null;
       }
    
@@ -114,8 +126,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @see ErrorMessage
     **/
     
-      public ErrorList errors() {
+       public ErrorList errors() {
          return errs;
       }
-
+   
    }

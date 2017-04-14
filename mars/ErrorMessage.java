@@ -166,7 +166,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
        public ErrorMessage(ProgramStatement statement, String message) {
          this.isWarning = ERROR;
-         this.filename = statement.getSourceMIPSprogram().getFilename();
+         this.filename = (statement.getSourceMIPSprogram() == null) 
+			                 ? "" : statement.getSourceMIPSprogram().getFilename();
          this.position = 0;
          this.message = message;
       	// Somewhere along the way we lose the macro history, but can
@@ -192,7 +193,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
       }
     	
-       private ArrayList<Integer> parseMacroHistory(String string) {		
+       private ArrayList<Integer> parseMacroHistory(String string) {	
          Pattern pattern = Pattern.compile("<\\d+>");
          Matcher matcher = pattern.matcher(string);
          String verify = new String(string).trim();

@@ -6,7 +6,7 @@
    import java.util.*;
 
 /*
-Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private int sourceLine;
       private int binaryStatement;
       private boolean altered;
+      private static final String invalidOperator = "<INVALID>";
     
     //////////////////////////////////////////////////////////////////////////////////
     /**
@@ -86,23 +87,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          this.altered = false;
       }
    
-// 	public MIPSprogram getOriginalProgram() {
-// 	  return (originalTokenList != null && originalTokenList.size() > 0) ? originalTokenList.get(0).getOriginalProgram() : null;
-// 	  }
-// 	public int getOriginalSourceLine() {
-// 	  return (originalTokenList != null && originalTokenList.size() > 0) ? originalTokenList.get(0).getOriginalSourceLine() : 0;
-// 	  }   
+   
     //////////////////////////////////////////////////////////////////////////////////
     /**
      * Constructor for ProgramStatement used only for writing a binary machine 
-     * instruction with no source code to refer back to.  It could be extended to support
-     * self-modifying code but currently supports only NOP which is all zeroes.
+     * instruction with no source code to refer back to.  Originally supported
+     * only NOP instruction (all zeroes), but extended in release 4.4 to support
+     * all basic instructions.  This was required for the self-modifying code
+     * feature.
      * @param binaryStatement The 32-bit machine code.
      * @param textAddress The Text Segment address in memory where the binary machine code for this statement
      * is stored.
      **/
-    //////////////////////////////////////////////////////////////////////////////////
-   
        public ProgramStatement(int binaryStatement, int textAddress) {
          this.sourceMIPSprogram = null;
          this.binaryStatement = binaryStatement;
@@ -110,14 +106,46 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          this.originalTokenList = this.strippedTokenList = null;
          this.source = "";
          this.machineStatement = this.basicAssemblyStatement = null;
-         this.operands = null;
-         this.numOperands = 0;
-         this.instruction = (binaryStatement==0) // this is a "nop" statement
-                            ? (Instruction) Globals.instructionSet.matchOperator("nop").get(0)
-            					 : null;
+         BasicInstruction instr = Globals.instructionSet.findByBinaryCode(binaryStatement);
+         if (instr == null) {
+            this.operands = null;
+            this.numOperands = 0;
+            this.instruction = (binaryStatement==0) // this is a "nop" statement
+               			? (Instruction) Globals.instructionSet.matchOperator("nop").get(0)
+               				 : null;
+         } 
+         else {
+            this.operands = new int[4];
+            this.numOperands = 0;
+            this.instruction = instr;
+         
+            String opandCodes = "fst";
+            String fmt = instr.getOperationMask();
+            BasicInstructionFormat instrFormat = instr.getInstructionFormat();
+            int numOps = 0;
+            for (int i = 0; i < opandCodes.length(); i++) {
+               int code = opandCodes.charAt(i);
+               int j = fmt.indexOf(code);
+               if (j >= 0) {
+                  int k0 = 31 - fmt.lastIndexOf(code);
+                  int k1 = 31 - j;
+                  int opand = (binaryStatement >> k0) & ((1 << (k1 - k0 + 1)) - 1);
+                  if (instrFormat.equals(BasicInstructionFormat.I_BRANCH_FORMAT) && numOps == 2) {
+                     opand = opand << 16 >> 16;
+                  } 
+                  else if (instrFormat.equals(BasicInstructionFormat.J_FORMAT) && numOps == 0) {
+                     opand |= (textAddress >> 2) & 0x3C000000;
+                  }
+                  this.operands[numOps] = opand;
+                  numOps++;
+               }
+            }
+            this.numOperands = numOps;
+         }
          this.altered = false;
+         this.basicStatementList = buildBasicStatementListFromBinaryCode(binaryStatement, instr, operands, numOperands);
       }
-   
+   	
    
     /////////////////////////////////////////////////////////////////////////////
     /**
@@ -128,8 +156,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      **/
        public void buildBasicStatementFromBasicInstruction(ErrorList errors) {
          Token token = strippedTokenList.get(0);
-			String basicStatementElement = token.getValue()+" ";;
-			String basic = basicStatementElement;
+         String basicStatementElement = token.getValue()+" ";;
+         String basic = basicStatementElement;
          basicStatementList.addString(basicStatementElement); // the operator
          TokenTypes tokenType, nextTokenType;
          String tokenValue;
@@ -140,8 +168,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             tokenType = token.getType();
             tokenValue = token.getValue();
             if (tokenType == TokenTypes.REGISTER_NUMBER) {
-				basicStatementElement = tokenValue;
-				   basic += basicStatementElement;
+               basicStatementElement = tokenValue;
+               basic += basicStatementElement;
                basicStatementList.addString(basicStatementElement);
                try {
                   registerNumber = RegisterFile.getUserRegister(tokenValue).getNumber();
@@ -155,8 +183,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             } 
             else if (tokenType == TokenTypes.REGISTER_NAME) {
                registerNumber = RegisterFile.getNumber(tokenValue);
-					basicStatementElement = "$" + registerNumber;
-					basic += basicStatementElement;
+               basicStatementElement = "$" + registerNumber;
+               basic += basicStatementElement;
                basicStatementList.addString(basicStatementElement);
                if (registerNumber < 0) {
                     // should never happen; should be caught before now...
@@ -167,8 +195,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             } 
             else if (tokenType == TokenTypes.FP_REGISTER_NAME) {
                registerNumber = Coprocessor1.getRegisterNumber(tokenValue);
-					basicStatementElement = "$f" + registerNumber;
-					basic += basicStatementElement;
+               basicStatementElement = "$f" + registerNumber;
+               basic += basicStatementElement;
                basicStatementList.addString(basicStatementElement);
                if (registerNumber < 0) {
                     // should never happen; should be caught before now...
@@ -212,7 +240,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   }
                }
             	 //////////////////////////////////////////////////////////////////////
-					basic += address;
+               basic += address;
                if (absoluteAddress) { // record as address if absolute, value if relative
                   basicStatementList.addAddress(address);
                } 
@@ -267,14 +295,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             *        }
             **************************  END DPS 3-July-2008 COMMENTS *******************************/
             
-					basic += tempNumeric;
+               basic += tempNumeric;
                basicStatementList.addValue(tempNumeric);  
                this.operands[this.numOperands++] = tempNumeric;
                 ///// End modification 1/7/05 KENV   ///////////////////////////////////////////
             } 
             else {
-				   basicStatementElement = tokenValue;
-					basic += basicStatementElement;
+               basicStatementElement = tokenValue;
+               basic += basicStatementElement;
                basicStatementList.addString(basicStatementElement);
             }
             // add separator if not at end of token list AND neither current nor 
@@ -283,11 +311,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                nextTokenType = strippedTokenList.get(i+1).getType();
                if (tokenType != TokenTypes.LEFT_PAREN  &&  tokenType != TokenTypes.RIGHT_PAREN  &&
                    nextTokenType != TokenTypes.LEFT_PAREN && nextTokenType != TokenTypes.RIGHT_PAREN)
-						 {
-						   basicStatementElement = ",";
-							basic += basicStatementElement;
-                     basicStatementList.addString(basicStatementElement);
-						}
+               {
+                  basicStatementElement = ",";
+                  basic += basicStatementElement;
+                  basicStatementList.addString(basicStatementElement);
+               }
             }
          }
          this.basicAssemblyStatement = basic;
@@ -343,25 +371,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       } // buildMachineStatementFromBasicStatement(
         
     
-    //////////////////////////////////////////////////////////////////////////////
-    //  Given operand (register or integer) and mask character ('f', 's', or 't'),
-    //  generate the correct sequence of bits and replace the mask with them.
-       private void insertBinaryCode(int value, char mask, ErrorList errors) {
-         int startPos = this.machineStatement.indexOf(mask);
-         int endPos = this.machineStatement.lastIndexOf(mask);
-         if (startPos == -1 || endPos == -1) { // should NEVER occur
-            errors.add(new ErrorMessage(this.sourceMIPSprogram,this.sourceLine,0,
-                   "INTERNAL ERROR: mismatch in number of operands in statement vs mask"));
-            return;
-         }
-         String bitString = Binary.intToBinaryString(value, endPos-startPos+1);
-         String state = this.machineStatement.substring(0, startPos) + bitString;
-         if (endPos < this.machineStatement.length()-1)
-            state = state + this.machineStatement.substring(endPos+1);
-         this.machineStatement = state;
-         return;
-      } // insertBinaryCode()
-    
     
     /////////////////////////////////////////////////////////////////////////////
     /**
@@ -372,17 +381,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public String toString() {
         // a crude attempt at string formatting.  Where's C when you need it?
          String blanks = "                               ";
-         int firstSpace = this.basicAssemblyStatement.indexOf(' ');
          String result = "["+this.textAddress+"]";
-         result += blanks.substring(0, 16-result.length()) + this.basicAssemblyStatement.substring(0,firstSpace);
-         result += blanks.substring(0, 24-result.length()) + this.basicAssemblyStatement.substring(firstSpace+1);;
+         if (this.basicAssemblyStatement != null) {
+            int firstSpace = this.basicAssemblyStatement.indexOf(" ");
+            result += blanks.substring(0, 16-result.length()) + this.basicAssemblyStatement.substring(0,firstSpace);
+            result += blanks.substring(0, 24-result.length()) + this.basicAssemblyStatement.substring(firstSpace+1);;
+         } 
+         else {
+            result += blanks.substring(0, 16 - result.length()) + "0x" + Integer.toString(this.binaryStatement, 16);
+         }
          result += blanks.substring(0, 40-result.length()) + ";  "; // this.source;
-         for (int i=0; i<this.numOperands; i++) 
-            result += operands[i] + " ";
-         result += "["+Binary.binaryStringToHexString(this.machineStatement)+"]";
-         result += "  "+this.machineStatement.substring(0,6)+"|" + this.machineStatement.substring(6,11)+"|"+
+         if (operands != null) {
+            for (int i=0; i<this.numOperands; i++) 
+            // result += operands[i] + " ";
+               result += Integer.toString(operands[i], 16) + " ";
+         }
+         if (this.machineStatement != null) {
+            result += "["+Binary.binaryStringToHexString(this.machineStatement)+"]";
+            result += "  "+this.machineStatement.substring(0,6)+"|" + this.machineStatement.substring(6,11)+"|"+
                this.machineStatement.substring(11,16)+"|" + this.machineStatement.substring(16,21)+"|"+
                this.machineStatement.substring(21,26)+"|" + this.machineStatement.substring(26,32);
+         }
          return result;
       } // toString()
    
@@ -464,7 +483,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     
     /**
      * Produces Basic Assembly statement for this MIPS source statement.
-	  * All numeric values are in decimal.
+     * All numeric values are in decimal.
      * @return The Basic Assembly statement.
      **/
      
@@ -474,15 +493,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     
     /**
      * Produces printable Basic Assembly statement for this MIPS source 
-	  * statement.  This is generated dynamically and any addresses and
-	  * values will be rendered in hex or decimal depending on the current
-	  * setting.
+     * statement.  This is generated dynamically and any addresses and
+     * values will be rendered in hex or decimal depending on the current
+     * setting.
      * @return The Basic Assembly statement.
      **/   
-	    public String getPrintableBasicAssemblyStatement() {
-		  return basicStatementList.toString();
-		 }
-		 
+       public String getPrintableBasicAssemblyStatement() {
+         return basicStatementList.toString();
+      }
+   	 
     /**
      * Produces binary machine statement as 32 character string, all '0' and '1' chars.
      * @return The String version of 32-bit binary machine code.
@@ -550,6 +569,88 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
       }
    
+    
+    //////////////////////////////////////////////////////////////////////////////
+    //  Given operand (register or integer) and mask character ('f', 's', or 't'),
+    //  generate the correct sequence of bits and replace the mask with them.
+       private void insertBinaryCode(int value, char mask, ErrorList errors) {
+         int startPos = this.machineStatement.indexOf(mask);
+         int endPos = this.machineStatement.lastIndexOf(mask);
+         if (startPos == -1 || endPos == -1) { // should NEVER occur
+            errors.add(new ErrorMessage(this.sourceMIPSprogram,this.sourceLine,0,
+                   "INTERNAL ERROR: mismatch in number of operands in statement vs mask"));
+            return;
+         }
+         String bitString = Binary.intToBinaryString(value, endPos-startPos+1);
+         String state = this.machineStatement.substring(0, startPos) + bitString;
+         if (endPos < this.machineStatement.length()-1)
+            state = state + this.machineStatement.substring(endPos+1);
+         this.machineStatement = state;
+         return;
+      } // insertBinaryCode()
+   
+   
+    //////////////////////////////////////////////////////////////////////////////
+   /*
+    *   Given a model BasicInstruction and the assembled (not source) operand array for a statement, 
+    *   this method will construct the corresponding basic instruction list.  This method is
+    *   used by the constructor that is given only the int address and binary code.  It is not
+    *   intended to be used when source code is available.  DPS 11-July-2013
+    */
+       private BasicStatementList buildBasicStatementListFromBinaryCode(int binary, BasicInstruction instr, int[] operands, int numOperands) {      
+         BasicStatementList statementList = new BasicStatementList();
+         int tokenListCounter = 1;  // index 0 is operator; operands start at index 1
+         if (instr == null) {
+            statementList.addString(invalidOperator);
+            return statementList;
+         } 
+         else {
+            statementList.addString(instr.getName()+" ");
+         }
+         for (int i=0; i<numOperands;i++) {
+            // add separator if not at end of token list AND neither current nor 
+            // next token is a parenthesis
+            if (tokenListCounter > 1 && tokenListCounter<instr.getTokenList().size()) {
+               TokenTypes thisTokenType = instr.getTokenList().get(tokenListCounter).getType();
+               if (thisTokenType != TokenTypes.LEFT_PAREN  &&  thisTokenType != TokenTypes.RIGHT_PAREN) {
+                  statementList.addString(",");
+               }					
+            }
+            boolean notOperand = true;
+            while (notOperand && tokenListCounter<instr.getTokenList().size()) {
+               TokenTypes tokenType = instr.getTokenList().get(tokenListCounter).getType();
+               if (tokenType.equals(TokenTypes.LEFT_PAREN)) {
+                  statementList.addString("(");
+               }
+               else if (tokenType.equals(TokenTypes.RIGHT_PAREN)) {
+                  statementList.addString(")");
+               }
+               else if (tokenType.toString().contains("REGISTER")) {
+                  String marker = (tokenType.toString().contains("FP_REGISTER")) ? "$f" : "$";
+                  statementList.addString(marker+operands[i]);
+                  notOperand = false;
+               }
+               else {
+                  statementList.addValue(operands[i]);
+                  notOperand = false;
+               }
+               tokenListCounter++;
+            }
+         }
+         while (tokenListCounter<instr.getTokenList().size()) {
+            TokenTypes tokenType = instr.getTokenList().get(tokenListCounter).getType();
+            if (tokenType.equals(TokenTypes.LEFT_PAREN)) {
+               statementList.addString("(");
+            }
+            else if (tokenType.equals(TokenTypes.RIGHT_PAREN)) {
+               statementList.addString(")");
+            }
+            tokenListCounter++;
+         }
+         return statementList;
+      } // buildBasicStatementListFromBinaryCode()
+   
+   
    
        //////////////////////////////////////////////////////////
    	 //
@@ -557,13 +658,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 //  of elements.  Each element is either a string, an
    	 //  address or a value.  The toString() method will
    	 //  return a string representation of the basic statement
-		 //  in which any addresses or values are rendered in the 
-		 //  current number format (e.g. decimal or hex).
+   	 //  in which any addresses or values are rendered in the 
+   	 //  current number format (e.g. decimal or hex).
    	 //
-		 //  NOTE: Address operands on Branch instructions are
-		 //  considered values instead of addresses because they
-		 //  are relative to the PC.
-		 //
+   	 //  NOTE: Address operands on Branch instructions are
+   	 //  considered values instead of addresses because they
+   	 //  are relative to the PC.
+   	 //
    	 //  DPS 29-July-2010
    	 
        private class BasicStatementList {

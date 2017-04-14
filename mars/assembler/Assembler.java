@@ -55,7 +55,7 @@
  * @version August 2003
  **/
 
-    public class Assembler {
+   public class Assembler {
       private ArrayList machineList;
       private ErrorList errors;
       private boolean inDataSegment; // status maintained by parser
@@ -89,7 +89,7 @@
     * 
     * @see ProgramStatement
     **/
-       public ArrayList assemble(MIPSprogram p, boolean extendedAssemblerEnabled)
+      public ArrayList assemble(MIPSprogram p, boolean extendedAssemblerEnabled)
        	throws ProcessingException {
          return assemble(p, extendedAssemblerEnabled, false);
       }
@@ -116,7 +116,7 @@
     * 
     * @see ProgramStatement
     **/
-       public ArrayList assemble(MIPSprogram p, boolean extendedAssemblerEnabled,
+      public ArrayList assemble(MIPSprogram p, boolean extendedAssemblerEnabled,
        	boolean warningsAreErrors) throws ProcessingException {
          ArrayList programFiles = new ArrayList();
          programFiles.add(p);
@@ -128,7 +128,7 @@
     * 
     * @return ErrorList of any assembler errors and warnings.
     */
-       public ErrorList getErrorList() {
+      public ErrorList getErrorList() {
          return errors;
       }
    
@@ -151,7 +151,7 @@
     * 
     * @see ProgramStatement
     **/
-       public ArrayList assemble(ArrayList tokenizedProgramFiles, boolean extendedAssemblerEnabled)
+      public ArrayList assemble(ArrayList tokenizedProgramFiles, boolean extendedAssemblerEnabled)
        	throws ProcessingException {
          return assemble(tokenizedProgramFiles, extendedAssemblerEnabled, false);
       }
@@ -179,8 +179,9 @@
     * 
     * @see ProgramStatement
     **/
-       public ArrayList assemble(ArrayList tokenizedProgramFiles, boolean extendedAssemblerEnabled,
+      public ArrayList assemble(ArrayList tokenizedProgramFiles, boolean extendedAssemblerEnabled,
        	boolean warningsAreErrors) throws ProcessingException {
+      	
          if (tokenizedProgramFiles == null || tokenizedProgramFiles.size() == 0)
             return null;
          textAddress = new UserKernelAddressSpace(Memory.textBaseAddress,
@@ -387,7 +388,7 @@
             try {
                Globals.memory.setStatement(statement.getAddress(), statement);
             } 
-                catch (AddressErrorException e) {
+               catch (AddressErrorException e) {
                   Token t = statement.getOriginalTokenList().get(0);
                   errors.add(new ErrorMessage(t.getSourceMIPSprogram(), t.getSourceLine(), t
                      .getStartPos(), "Invalid address for text segment: " + e.getAddress()));
@@ -417,7 +418,7 @@
    // //////////////////////////////////////////////////////////////////////
    // Will check for duplicate text addresses, which can happen inadvertantly when using
    // operand on .text directive. Will generate error message for each one that occurs.
-       private void catchDuplicateAddresses(ArrayList instructions, ErrorList errors) {
+      private void catchDuplicateAddresses(ArrayList instructions, ErrorList errors) {
          for (int i = 0; i < instructions.size() - 1; i++) {
             ProgramStatement ps1 = (ProgramStatement) instructions.get(i);
             ProgramStatement ps2 = (ProgramStatement) instructions.get(i + 1);
@@ -448,8 +449,9 @@
     * @return ArrayList of ProgramStatements because parsing a macro expansion
     *         request will return a list of ProgramStatements expanded
     */
-       private ArrayList<ProgramStatement> parseLine(TokenList tokenList, String source,
+      private ArrayList<ProgramStatement> parseLine(TokenList tokenList, String source,
        	int sourceLineNumber, boolean extendedAssemblerEnabled) { 
+      	
          ArrayList<ProgramStatement> ret = new ArrayList<ProgramStatement>();
       
          ProgramStatement programStatement;
@@ -487,7 +489,7 @@
             parenFreeTokens.remove(tokens.size() - 1);
             parenFreeTokens.remove(1);
          }
-         Macro macro = macroPool.getMatchingMacro(parenFreeTokens, parenFreeTokens.get(0).getSourceLine());
+         Macro macro = macroPool.getMatchingMacro(parenFreeTokens, sourceLineNumber);//parenFreeTokens.get(0).getSourceLine());
       
       // expand macro if this line is a macro expansion call
          if (macro != null) {
@@ -518,10 +520,12 @@
                   String substituted = macro.getSubstitutedLine(i, tokens, counter, errors);
                   TokenList tokenList2 = fileCurrentlyBeingAssembled.getTokenizer().tokenizeLine(
                      i, substituted, errors);
+               
                   // If token list getProcessedLine() is not empty, then .eqv was performed and it contains the modified source.
                	// Put it into the line to be parsed, so it will be displayed properly in text segment display. DPS 23 Jan 2013
                   if (tokenList2.getProcessedLine().length() > 0)
                      substituted = tokenList2.getProcessedLine();
+               
                   // recursively parse lines of expanded macro
                   ArrayList<ProgramStatement> statements = parseLine(tokenList2, "<" + (i-macro.getFromLine()+macro.getOriginalFromLine()) + "> "
                      + substituted.trim(), sourceLineNumber, extendedAssemblerEnabled);
@@ -605,7 +609,7 @@
          return null;
       } // parseLine()
    
-       private void detectLabels(TokenList tokens, Macro current) {
+      private void detectLabels(TokenList tokens, Macro current) {
          if (tokenListBeginsWithLabel(tokens))
             current.addLabel(tokens.get(0).getValue());
       }
@@ -616,7 +620,7 @@
    // extended instruction, we have to be operating under a 16-bit
    // memory model and the instruction has to have defined an
    // alternate compact translation.
-       private boolean compactTranslationCanBeApplied(ProgramStatement statement) {
+      private boolean compactTranslationCanBeApplied(ProgramStatement statement) {
          return (statement.getInstruction() instanceof ExtendedInstruction
             && Globals.memory.usingCompactMemoryConfiguration() && ((ExtendedInstruction) statement
             	.getInstruction()).hasCompactTranslation());
@@ -626,7 +630,7 @@
    // Pre-process the token list for a statement by stripping off any comment.
    // NOTE: the ArrayList parameter is not modified; a new one is cloned and
    // returned.
-       private TokenList stripComment(TokenList tokenList) {
+      private TokenList stripComment(TokenList tokenList) {
          if (tokenList.isEmpty())
             return tokenList;
          TokenList tokens = (TokenList) tokenList.clone();
@@ -643,7 +647,7 @@
     * either are present. Any label definition will be recorded in the symbol
     * table. NOTE: the ArrayList parameter will be modified.
     */
-       private void stripLabels(TokenList tokens) {
+      private void stripLabels(TokenList tokens) {
       // If there is a label, handle it here and strip it off.
          boolean thereWasLabel = this.parseAndRecordLabel(tokens);
          if (thereWasLabel) {
@@ -655,7 +659,7 @@
    // //////////////////////////////////////////////////////////////////////////////////
    // Parse and record label, if there is one. Note the identifier and its colon are
    // two separate tokens, since they may be separated by spaces in source code.
-       private boolean parseAndRecordLabel(TokenList tokens) {
+      private boolean parseAndRecordLabel(TokenList tokens) {
          if (tokens.size() < 2) {
             return false;
          } 
@@ -677,7 +681,7 @@
          }
       } // parseLabel()
    
-       private boolean tokenListBeginsWithLabel(TokenList tokens) {
+      private boolean tokenListBeginsWithLabel(TokenList tokens) {
       // 2-July-2010. DPS. Remove prohibition of operator names as labels
          if (tokens.size() < 2)
             return false;
@@ -687,7 +691,7 @@
    
    // //////////////////////////////////////////////////////////////////////////////////
    // This source code line is a directive, not a MIPS instruction. Let's carry it out.
-       private void executeDirective(TokenList tokens) {
+      private void executeDirective(TokenList tokens) {
          Token token = tokens.get(0);
          Directives direct = Directives.matchDirective(token.getValue());
          if (Globals.debug)
@@ -890,7 +894,7 @@
    // Process the list of .globl labels, if any, declared and defined in this file.
    // We'll just move their symbol table entries from local symbol table to global
    // symbol table at the end of the first assembly pass.
-       private void transferGlobals() {
+      private void transferGlobals() {
          for (int i = 0; i < globalDeclarationList.size(); i++) {
             Token label = globalDeclarationList.get(i);
             Symbol symtabEntry = fileCurrentlyBeingAssembled.getLocalSymbolTable().getSymbol(
@@ -918,7 +922,7 @@
    // //////////////////////////////////////////////////////////////////////////////////
    // This source code line, if syntactically correct, is a continuation of a
    // directive list begun on on previous line.
-       private void executeDirectiveContinuation(TokenList tokens) {
+      private void executeDirectiveContinuation(TokenList tokens) {
          Directives direct = this.dataDirective;
          if (direct == Directives.WORD || direct == Directives.HALF || direct == Directives.BYTE
          	|| direct == Directives.FLOAT || direct == Directives.DOUBLE) {
@@ -936,7 +940,7 @@
    // //////////////////////////////////////////////////////////////////////////////////
    // Given token, find the corresponding Instruction object. If token was not
    // recognized as OPERATOR, there is a problem.
-       private ArrayList matchInstruction(Token token) {
+      private ArrayList matchInstruction(Token token) { 
          if (token.getType() != TokenTypes.OPERATOR) {
             if (token.getSourceMIPSprogram().getLocalMacroPool()
             	.matchesAnyMacroName(token.getValue()))
@@ -963,7 +967,7 @@
    // Can also handle "directive continuations", e.g. second or subsequent line
    // of a multiline list, which does not contain the directive token. Just pass the
    // current directive as argument.
-       private void storeNumeric(TokenList tokens, Directives directive, ErrorList errors) {
+      private void storeNumeric(TokenList tokens, Directives directive, ErrorList errors) {
          Token token = tokens.get(0);
       // A double-check; should have already been caught...removed ".word" exemption 11/20/06
          if (!passesDataSegmentCheck(token))
@@ -1059,7 +1063,7 @@
    // Called by storeNumeric()
    // NOTE: The token itself may be a label, in which case the correct action is
    // to store the address of that label (into however many bytes specified).
-       private void storeInteger(Token token, Directives directive, ErrorList errors) {
+      private void storeInteger(Token token, Directives directive, ErrorList errors) {
          int lengthInBytes = DataTypes.getLengthInBytes(directive);
          if (TokenTypes.isIntegerTokenType(token.getType())) {
             int value = Binary.stringToInt(token.getValue()); 
@@ -1097,7 +1101,7 @@
                try {
                   Globals.memory.set(this.textAddress.get(), value, lengthInBytes);
                } 
-                   catch (AddressErrorException e) {
+                  catch (AddressErrorException e) {
                      errors.add(new ErrorMessage(token.getSourceMIPSprogram(),
                         token.getSourceLine(), token.getStartPos(), "\""
                         	+ this.textAddress.get()
@@ -1137,7 +1141,7 @@
    // //////////////////////////////////////////////////////////////////////////////
    // Store real (fixed or floating point) value given floating (float, double) directive.
    // Called by storeNumeric()
-       private void storeRealNumber(Token token, Directives directive, ErrorList errors) {
+      private void storeRealNumber(Token token, Directives directive, ErrorList errors) {
          int lengthInBytes = DataTypes.getLengthInBytes(directive);
          double value;
       
@@ -1146,7 +1150,7 @@
             try {
                value = Double.parseDouble(token.getValue());
             } 
-                catch (NumberFormatException nfe) {
+               catch (NumberFormatException nfe) {
                   errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(),
                      token.getStartPos(), "\"" + token.getValue()
                      	+ "\" is not a valid floating point constant"));
@@ -1181,7 +1185,7 @@
    // Use directive argument to distinguish between ASCII and ASCIIZ. The
    // latter stores a terminating null byte. Can handle a list of one or more
    // strings on a single line.
-       private void storeStrings(TokenList tokens, Directives direct, ErrorList errors) {
+      private void storeStrings(TokenList tokens, Directives direct, ErrorList errors) {
          Token token;
       // Correctly handles case where this is a "directive continuation" line.
          int tokenStart = 0;
@@ -1241,7 +1245,7 @@
                      Globals.memory.set(this.dataAddress.get(), (int) theChar,
                         DataTypes.CHAR_SIZE);
                   } 
-                      catch (AddressErrorException e) {
+                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token
                            .getSourceLine(), token.getStartPos(), "\""
                            + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1252,7 +1256,7 @@
                   try {
                      Globals.memory.set(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE);
                   } 
-                      catch (AddressErrorException e) {
+                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token
                            .getSourceLine(), token.getStartPos(), "\""
                            + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1265,7 +1269,7 @@
    
    // //////////////////////////////////////////////////////////////////////////////////
    // Simply check to see if we are in data segment. Generate error if not.
-       private boolean passesDataSegmentCheck(Token token) {
+      private boolean passesDataSegmentCheck(Token token) {
          if (!this.inDataSegment) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token
                .getStartPos(), "\"" + token.getValue()
@@ -1281,14 +1285,14 @@
    // Writes the given int value into current data segment address. Works for
    // all the integer types plus float (caller is responsible for doing floatToIntBits).
    // Returns address at which the value was stored.
-       private int writeToDataSegment(int value, int lengthInBytes, Token token, ErrorList errors) {
+      private int writeToDataSegment(int value, int lengthInBytes, Token token, ErrorList errors) {
          if (this.autoAlign) {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
          }
          try {
             Globals.memory.set(this.dataAddress.get(), value, lengthInBytes);
          } 
-             catch (AddressErrorException e) {
+            catch (AddressErrorException e) {
                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token
                   .getStartPos(), "\"" + this.dataAddress.get()
                   + "\" is not a valid data segment address"));
@@ -1304,7 +1308,7 @@
    // only for DOUBLE floating
    // point values -- Memory class doesn't have method for writing 8 bytes, so
    // use setWord twice.
-       private void writeDoubleToDataSegment(double value, Token token, ErrorList errors) {
+      private void writeDoubleToDataSegment(double value, Token token, ErrorList errors) {
          int lengthInBytes = DataTypes.DOUBLE_SIZE;
          if (this.autoAlign) {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
@@ -1312,7 +1316,7 @@
          try {
             Globals.memory.setDouble(this.dataAddress.get(), value);
          } 
-             catch (AddressErrorException e) {
+            catch (AddressErrorException e) {
                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token
                   .getStartPos(), "\"" + this.dataAddress.get()
                   + "\" is not a valid data segment address"));
@@ -1326,7 +1330,7 @@
    // which is next higher multiple of the byte boundary. Used for aligning data segment.
    // For instance if args are 6 and 4, returns 8 (next multiple of 4 higher than 6).
    // NOTE: it will fix any symbol table entries for this address too. See else part.
-       private int alignToBoundary(int address, int byteBoundary) {
+      private int alignToBoundary(int address, int byteBoundary) {
          int remainder = address % byteBoundary;
          if (remainder == 0) {
             return address;
@@ -1344,13 +1348,13 @@
    // ProgramStatements.
    // Sorting is based on unsigned integer value of
    // ProgramStatement.getAddress()
-       private class ProgramStatementComparator implements Comparator {
+      private class ProgramStatementComparator implements Comparator {
       // Will be used to sort the collection. Unsigned int compare, because
       // all kernel 32-bit
       // addresses have 1 in high order bit, which makes the int negative.
       // "Unsigned" compare
       // is needed when signs of the two operands differ.
-          public int compare(Object obj1, Object obj2) {
+         public int compare(Object obj1, Object obj2) {
             if (obj1 instanceof ProgramStatement && obj2 instanceof ProgramStatement) {
                int addr1 = ((ProgramStatement) obj1).getAddress();
                int addr2 = ((ProgramStatement) obj2).getAddress();
@@ -1362,7 +1366,7 @@
          }
       
       // Take a hard line.
-          public boolean equals(Object obj) {
+         public boolean equals(Object obj) {
             return this == obj;
          }
       }
@@ -1371,32 +1375,32 @@
    // Private class to simultaneously track addresses in both user and kernel
    // address spaces.
    // Instantiate one for data segment and one for text segment.
-       private class UserKernelAddressSpace {
+      private class UserKernelAddressSpace {
          int[] address;
          int currentAddressSpace;
          private final int USER = 0, KERNEL = 1;
       
       // Initially use user address space, not kernel.
-          private UserKernelAddressSpace(int userBase, int kernelBase) {
+         private UserKernelAddressSpace(int userBase, int kernelBase) {
             address = new int[2];
             address[USER] = userBase;
             address[KERNEL] = kernelBase;
             currentAddressSpace = USER;
          }
       
-          private int get() {
+         private int get() {
             return address[currentAddressSpace];
          }
       
-          private void set(int value) {
+         private void set(int value) {
             address[currentAddressSpace] = value;
          }
       
-          private void increment(int increment) {
+         private void increment(int increment) {
             address[currentAddressSpace] += increment;
          }
       
-          private void setAddressSpace(int addressSpace) {
+         private void setAddressSpace(int addressSpace) {
             if (addressSpace == USER || addressSpace == KERNEL) {
                currentAddressSpace = addressSpace;
             } 
@@ -1422,14 +1426,14 @@
    // - number of bytes (addresses are 4 bytes but may be used with any of
    // the integer directives: .word, .half, .byte)
    // - the label's token. Normally need only the name but error message needs more.
-       private class DataSegmentForwardReferences {
+      private class DataSegmentForwardReferences {
          private ArrayList forwardReferenceList;
       
-          private DataSegmentForwardReferences() {
+         private DataSegmentForwardReferences() {
             forwardReferenceList = new ArrayList();
          }
       
-          private int size() {
+         private int size() {
             return forwardReferenceList.size();
          }
       
@@ -1437,19 +1441,19 @@
       // - memory address to receive the label's address once resolved
       // - number of address bytes to store (1 for .byte, 2 for .half, 4 for .word)
       // - the label's token. All its information will be needed if error message generated.
-          private void add(int patchAddress, int length, Token token) {
+         private void add(int patchAddress, int length, Token token) {
             forwardReferenceList.add(new DataSegmentForwardReference(patchAddress, length, token));
          }
       
       // Add the entries of another DataSegmentForwardReferences object to this one.
       // Can be used at the end of each source file to dump all unresolved references
       // into a common list to be processed after all source files parsed.
-          private void add(DataSegmentForwardReferences another) {
+         private void add(DataSegmentForwardReferences another) {
             forwardReferenceList.addAll(another.forwardReferenceList);
          }
       
       // Clear out the list. Allows you to re-use it.
-          private void clear() {
+         private void clear() {
             forwardReferenceList.clear();
          }
       
@@ -1460,7 +1464,7 @@
       // is applied and the forward reference removed. If search is not successful,
       // the forward reference remains (it is either undefined or a global label
       // defined in a file not yet parsed).
-          private int resolve(SymbolTable localSymtab) {
+         private int resolve(SymbolTable localSymtab) {
             int count = 0;
             int labelAddress;
             DataSegmentForwardReference entry;
@@ -1472,7 +1476,7 @@
                   try {
                      Globals.memory.set(entry.patchAddress, labelAddress, entry.length);
                   } 
-                      catch (AddressErrorException aee) {
+                     catch (AddressErrorException aee) {
                      }
                   forwardReferenceList.remove(i);
                   i--; // needed because removal shifted the remaining list indices down
@@ -1484,7 +1488,7 @@
       
       // Call this when you are confident that remaining list entries are to
       // undefined labels.
-          private void generateErrorMessages(ErrorList errors) {
+         private void generateErrorMessages(ErrorList errors) {
             DataSegmentForwardReference entry;
             for (int i = 0; i < forwardReferenceList.size(); i++) {
                entry = (DataSegmentForwardReference) forwardReferenceList.get(i);
@@ -1495,12 +1499,12 @@
          }
       
       // inner-inner class to hold each entry of the forward reference list.
-          private class DataSegmentForwardReference {
+         private class DataSegmentForwardReference {
             int patchAddress;
             int length;
             Token token;
          
-             DataSegmentForwardReference(int patchAddress, int length, Token token) {
+            DataSegmentForwardReference(int patchAddress, int length, Token token) {
                this.patchAddress = patchAddress;
                this.length = length;
                this.token = token;

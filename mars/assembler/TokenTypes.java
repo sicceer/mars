@@ -44,7 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final String TOKEN_DELIMITERS = "\t ,()";
       public static final TokenTypes COMMENT       = new TokenTypes("COMMENT");
       public static final TokenTypes DIRECTIVE     = new TokenTypes("DIRECTIVE");
-      public static final TokenTypes OPERATOR      = new TokenTypes("OPERATER");
+      public static final TokenTypes OPERATOR      = new TokenTypes("OPERATOR");
       public static final TokenTypes DELIMITER     = new TokenTypes("DELIMITER");
    /** note: REGISTER_NAME is token of form $zero whereas REGISTER_NUMBER is token
    *       of form $0.  The former is part of extended assembler, and latter is part

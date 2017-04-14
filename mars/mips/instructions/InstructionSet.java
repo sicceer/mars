@@ -8,7 +8,7 @@
    import java.io.*;
 	
 	/*
-Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -47,6 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     public class InstructionSet
    {
       private ArrayList instructionList;
+	  private ArrayList opcodeMatchMaps;
       private SyscallLoader syscallLoader;
     /**
      * Creates a new InstructionSet object.
@@ -3072,9 +3073,37 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             Instruction inst = (Instruction) instructionList.get(i);
             inst.createExampleTokenList();
          }
-      
+
+		 HashMap maskMap = new HashMap();
+		 ArrayList matchMaps = new ArrayList();
+		 for (int i = 0; i < instructionList.size(); i++) {
+		 	Object rawInstr = instructionList.get(i);
+			if (rawInstr instanceof BasicInstruction) {
+				BasicInstruction basic = (BasicInstruction) rawInstr;
+				Integer mask = Integer.valueOf(basic.getOpcodeMask());
+				Integer match = Integer.valueOf(basic.getOpcodeMatch());
+				HashMap matchMap = (HashMap) maskMap.get(mask);
+				if (matchMap == null) {
+					matchMap = new HashMap();
+					maskMap.put(mask, matchMap);
+					matchMaps.add(new MatchMap(mask, matchMap));
+				}
+				matchMap.put(match, basic);
+			}
+		 }
+		 Collections.sort(matchMaps);
+		 this.opcodeMatchMaps = matchMaps;
       }
-   	
+
+	public BasicInstruction findByBinaryCode(int binaryInstr) {
+		ArrayList matchMaps = this.opcodeMatchMaps;
+		for (int i = 0; i < matchMaps.size(); i++) {
+			MatchMap map = (MatchMap) matchMaps.get(i);
+			BasicInstruction ret = map.find(binaryInstr);
+			if (ret != null) return ret;
+		}
+		return null;
+	}
    	
     /*  METHOD TO ADD PSEUDO-INSTRUCTIONS
     */
@@ -3282,6 +3311,40 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                  ((Globals.getSettings().getDelayedBranchingEnabled()) ? 
             	  Instruction.INSTRUCTION_LENGTH : 0) );	 
       }
-   	
+
+	  private static class MatchMap implements Comparable {
+	  	private int mask;
+		private int maskLength; // number of 1 bits in mask
+		private HashMap matchMap;
+
+		public MatchMap(int mask, HashMap matchMap) {
+			this.mask = mask;
+			this.matchMap = matchMap;
+
+			int k = 0;
+			int n = mask;
+			while (n != 0) {
+				k++;
+				n &= n - 1;
+			}
+			this.maskLength = k;
+		}
+
+		public boolean equals(Object o) {
+			return o instanceof MatchMap && mask == ((MatchMap) o).mask;
+		}
+
+		public int compareTo(Object other) {
+			MatchMap o = (MatchMap) other;
+			int d = o.maskLength - this.maskLength;
+			if (d == 0) d = this.mask - o.mask;
+			return d;
+		}
+
+		public BasicInstruction find(int instr) {
+			int match = Integer.valueOf(instr & mask);
+			return (BasicInstruction) matchMap.get(match);
+		}
+	}
    }
 

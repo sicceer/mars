@@ -1,7 +1,7 @@
 package mars.mips.instructions;
 
 /*
-Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -42,6 +42,9 @@ public class BasicInstruction extends Instruction {
     private BasicInstructionFormat instructionFormat;
     private String operationMask;
     private SimulationCode simulationCode;
+
+	private int opcodeMask;  // integer with 1's where constants required (0/1 become 1, f/s/t become 0)
+	private int opcodeMatch; // integer matching constants required (0/1 become 0/1, f/s/t become 0)
 	/**
 	 * BasicInstruction constructor.
 	 * 
@@ -76,6 +79,9 @@ public class BasicInstruction extends Instruction {
 		        System.out.println(example+" mask not "+Instruction.INSTRUCTION_LENGTH_BITS+" bits!");
 				 }
         this.simulationCode = simCode;
+
+		this.opcodeMask = (int) Long.parseLong(this.operationMask.replaceAll("[01]", "1").replaceAll("[^01]", "0"), 2);
+		this.opcodeMatch = (int) Long.parseLong(this.operationMask.replaceAll("[^1]", "0"), 2);
 	}
 	
 	  // Temporary constructor so that instructions without description yet will compile.
@@ -124,5 +130,13 @@ public class BasicInstruction extends Instruction {
 	 
 	public SimulationCode getSimulationCode() {
 	    return simulationCode;
+	}
+
+	public int getOpcodeMask() {
+		return this.opcodeMask;
+	}
+
+	public int getOpcodeMatch() {
+		return this.opcodeMatch;
 	}
 }

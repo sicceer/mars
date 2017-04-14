@@ -129,7 +129,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          for (Macro macro : macroList) {
             if (macro.getName().equals(firstToken.getValue())
             	&& macro.getArgs().size() + 1 == tokens.size()
-            	&& macro.getToLine() < callerLine
+            	//&& macro.getToLine() < callerLine  // condition removed; doesn't work nicely in conjunction with .include, and does not seem necessary.  DPS 8-MAR-2013
             	&& (ret == null || ret.getFromLine() < macro.getFromLine()))
                ret = macro;
          }

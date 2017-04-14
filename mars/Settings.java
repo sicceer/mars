@@ -9,7 +9,7 @@
    import java.awt.Font;
 
 /*
-Copyright (c) 2003-2011,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -65,7 +65,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final int EXTENDED_ASSEMBLER_ENABLED = 0;
     /** Flag to determine whether or not program being assembled is limited to 
        using register numbers instead of names. NOTE: Its default value is
-		 false and the IDE provides no means to change it! */
+   	 false and the IDE provides no means to change it! */
       public static final int BARE_MACHINE_ENABLED = 1;
     /** Flag to determine whether or not a file is immediately and automatically assembled 
        upon opening. Handy when using externa editor like mipster. */
@@ -109,6 +109,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final int GENERIC_TEXT_EDITOR = 18;
     /** Flag to control whether or not language-aware editor will use auto-indent feature */
       public static final int AUTO_INDENT = 19;
+    /** Flag to determine whether a program can write binary code to the text or data segment and
+        execute that code.  */
+      public static final int SELF_MODIFYING_CODE_ENABLED = 20;	
    
       // NOTE: key sequence must match up with labels above which are used for array indexes!
       private static String[] booleanSettingsKeys = {"ExtendedAssembler", "BareMachine", "AssembleOnOpen", "AssembleAll",
@@ -117,7 +120,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          												"WarningsAreErrors", "ProgramArguments", "DataSegmentHighlighting",
          												"RegistersHighlighting", "StartAtMain", "EditorCurrentLineHighlighting",
          												"PopupInstructionGuidance", "PopupSyscallInput", "GenericTextEditor", 
-															"AutoIndent" };
+         												"AutoIndent", "SelfModifyingCode" };
    
       /** Last resort default values for boolean settings; will use only  if neither
    	 *  the Preferences nor the properties file work. If you wish to change them, 
@@ -126,7 +129,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 */
       public static boolean[] defaultBooleanSettingsValues = { // match the above list by position
                                               true, false, false, false, false, true, true, false, false, 
-															 true, false, false, true, true, false, true, true, false, false, true };
+         												 true, false, false, true, true, false, true, true, false, false, true, false };
    
       // STRING SETTINGS.  Each array position has associated name.
    	/** Current specified exception handler file (a MIPS assembly source file) */
@@ -192,8 +195,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
       // DPS 3-Oct-2012
       // Changed default font family from "Courier New" to "Monospaced" after receiving reports that Mac were not
-		// correctly rendering the left parenthesis character in the editor or text segment display.
-		// See http://www.mirthcorp.com/community/issues/browse/MIRTH-1921?page=com.atlassian.jira.plugin.system.issuetabpanels:all-tabpanel
+   	// correctly rendering the left parenthesis character in the editor or text segment display.
+   	// See http://www.mirthcorp.com/community/issues/browse/MIRTH-1921?page=com.atlassian.jira.plugin.system.issuetabpanels:all-tabpanel
       private static final String[] defaultFontFamilySettingsValues = { "Monospaced","Monospaced","Monospaced",
          "Monospaced","Monospaced","Monospaced","Monospaced"
          };
@@ -975,15 +978,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          internalSetBooleanSetting(START_AT_MAIN, value);
       }      	  
    
+
+      /**
+   	 * Temporarily establish boolean setting.  This setting will NOT be written to persisent
+   	 * store!  Currently this is used only when running MARS from the command line 
+   	 * @param id setting identifier.  These are defined for this class as static final int.
+   	 * @param value True to enable the setting, false otherwise.
+   	 */		
+       public void setBooleanSettingNonPersistent(int id, boolean value) {
+         if (id >=0 && id < booleanSettingsValues.length) {
+            booleanSettingsValues[id] = value;
+         } 
+         else {
+            throw new IllegalArgumentException("Invalid boolean setting ID");
+         } 
+      }
+    
    	
       /**
    	 * Establish setting for whether delayed branching will be applied during
    	 * MIPS program execution.  This setting will NOT be written to persisent
    	 * store!  This method should be called only to temporarily set this 
    	 * setting -- currently this is needed only when running MARS from the
-   	 * command line (MarsLaunch.java).
+   	 * command line.
    	 * @param value True to enabled delayed branching, false otherwise.
-   	 *  @deprecated Use <code>setBooleanSetting(int id, boolean value)</code> with the appropriate boolean setting ID
+   	 *  @deprecated Use <code>setBooleanSettingNonPersistent(int id, boolean value)</code> with the appropriate boolean setting ID
    	 *  (e.g. <code>Settings.DELAYED_BRANCHING_ENABLED</code>)
    	 */
        public void setDelayedBranchingEnabledNonPersistent(boolean value) {
@@ -992,7 +1011,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       	// the internalSetBooleanSetting() method instead.
          booleanSettingsValues[DELAYED_BRANCHING_ENABLED] = value;
       }
-    
+
+   
    	 /**
    	   * Set name of exception handler file and write it to persistent storage.
    		* @param newFilename name of exception handler file
@@ -1160,7 +1180,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        private void internalSetBooleanSetting(int settingIndex, boolean value) {
          if (value != booleanSettingsValues[settingIndex]) {
             booleanSettingsValues[settingIndex] = value;
-            saveBooleanSetting(settingIndex);
+            saveBooleanSetting(settingIndex); 
+				setChanged(); 
+				notifyObservers();
          }		 
       }
    	

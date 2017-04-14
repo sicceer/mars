@@ -1,11 +1,11 @@
 <html>
-<title>MARS 4.3 help contents
+<title>MARS 4.4 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.3</h4>
-<h4>January 2013</h4>
+<h4>Release 4.4</h4>
+<h4>August 2013</h4>
 <h4>Configuration Settings</h4>
 </center>
 
@@ -53,6 +53,10 @@ directly into the Run I/O tab at the bottom of the screen.</li>
        its target value is relative to the Program Counter (<i>PC-relative addressing</i>).  Although technically correct, this led to 
 		 confusion in the MARS community because the generated code did not match textbook examples.  Starting with Release 3.4, the relative branching
 		 offset is always calculated as if delayed branching is enabled even when it is not.  The runtime simulation adjusts accordingly.</li>
+   <li><b>Self-modifying code.</b>  Default value is <b>false</b>.  New in Release 4.4.
+       If selected, a running MIPS program can write to a user text segment address and can branch/jump to a user data segment address.
+	   These capabilities permit a program to dynamically generate and/or modify its binary code.  Also permits interactive modification of
+	   text segment contents through either the Data Segment or Text Segment windows.
    <li><b>The Editor dialog.</b>  Use it to view and modify editor font settings.  New with Release 3.3.</li>
    <li><b>The Highlighting dialog.</b>  Use it to modify color and font settings for the highlighting of table items in the 
        Text Segment window, Data Segment window, Registers window, Coprocessor0 window and Coprocessor1 window.

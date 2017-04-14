@@ -12,7 +12,7 @@
    import javax.swing.event.*;
 
 /*
-Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -53,7 +53,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private JScrollPane dataTableScroller;
       private Container contentPane;
       private JPanel tablePanel;
-      private JButton dataButton, nextButton, prevButton, stakButton, globButton, heapButton, kernButton, extnButton, mmioButton;
+      private JButton dataButton, nextButton, prevButton, stakButton, globButton, heapButton, kernButton, extnButton, mmioButton, textButton;
       private JCheckBox asciiDisplayCheckBox;
    	
       static final int VALUES_PER_ROW = 8;
@@ -99,7 +99,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          super("Data Segment", true, false, true, true);
       	
          Simulator.getInstance().addObserver(this);
-         settings = Globals.getSettings();	
+         settings = Globals.getSettings();
+         settings.addObserver(this);
+      							
          homeAddress = Globals.memory.dataBaseAddress;  // address for Home button
          firstAddress = homeAddress;  // first address to display at any given time
          userOrKernelMode = USER_MODE;
@@ -112,12 +114,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          try {
             prevButton = new PrevButton(new ImageIcon(tk.getImage(cs.getResource(Globals.imagesPath+"Previous22.png"))));//"Back16.gif"))));//"Down16.gif"))));
             nextButton = new NextButton(new ImageIcon(tk.getImage(cs.getResource(Globals.imagesPath+"Next22.png"))));//"Forward16.gif")))); //"Up16.gif"))));
+            //  This group of buttons was replaced by a combo box.  Keep the JButton objects for their action listeners.
             dataButton = new JButton();//".data");
             stakButton = new JButton();//"$sp");
             globButton = new JButton();//"$gp");
             heapButton = new JButton();//"heap");
             extnButton = new JButton();//".extern");
             mmioButton = new JButton();//"MMIO");
+            textButton = new JButton();//".text");
             kernButton = new JButton();//".kdata");
          } 
              catch (NullPointerException e) {
@@ -143,14 +147,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          JPanel navButtons = new JPanel(new GridLayout(1,4));
          navButtons.add(prevButton);
          navButtons.add(nextButton);
-      	/*  This group of buttons was replaced by a combo box.  Keep the JButton objects for their action listeners.
-         navButtons.add(dataButton);
-         navButtons.add(heapButton);
-         navButtons.add(stakButton);
-         navButtons.add(globButton);
-         navButtons.add(extnButton);
-         navButtons.add(kernButton);
-         navButtons.add(mmioButton);//*/
          features.add(navButtons);
          features.add(baseAddressSelector);
          for (int i=0; i<choosers.length; i++) {
@@ -179,6 +175,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          displayBaseAddressArray[STACK_POINTER_BASE_ADDRESS_INDEX] = -1; /*Memory.stackPointer*/ 
          displayBaseAddressArray[KERNEL_DATA_BASE_ADDRESS_INDEX] = Memory.kernelDataBaseAddress; 
          displayBaseAddressArray[MMIO_BASE_ADDRESS_INDEX] = Memory.memoryMapBaseAddress;
+         displayBaseAddressArray[TEXT_BASE_ADDRESS_INDEX] = Memory.textBaseAddress;
          displayBaseAddressChoices = createBaseAddressLabelsArray(displayBaseAddressArray, descriptions);
          baseAddressSelector.setModel(new CustomComboBoxModel(displayBaseAddressChoices));
          displayBaseAddresses = displayBaseAddressArray;
@@ -308,20 +305,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        // Initalize arrays used with Base Address combo box chooser.
    	 // The combo box replaced the row of buttons when number of buttons expanded to 7!
       private static final int EXTERN_BASE_ADDRESS_INDEX = 0;
-      private static final int GLOBAL_POINTER_ADDRESS_INDEX = 1;
-      private static final int DATA_BASE_ADDRESS_INDEX = 2;
-      private static final int HEAP_BASE_ADDRESS_INDEX = 3;
-      private static final int STACK_POINTER_BASE_ADDRESS_INDEX = 4;
-      private static final int KERNEL_DATA_BASE_ADDRESS_INDEX = 5;
-      private static final int MMIO_BASE_ADDRESS_INDEX = 6;
+      private static final int GLOBAL_POINTER_ADDRESS_INDEX = 3; //1;
+      private static final int TEXT_BASE_ADDRESS_INDEX = 5; //2;
+      private static final int DATA_BASE_ADDRESS_INDEX = 1; //3;
+      private static final int HEAP_BASE_ADDRESS_INDEX = 2; //4;
+      private static final int STACK_POINTER_BASE_ADDRESS_INDEX = 4; //5;
+      private static final int KERNEL_DATA_BASE_ADDRESS_INDEX = 6;
+      private static final int MMIO_BASE_ADDRESS_INDEX = 7;
       // Must agree with above in number and order...
-      private int[] displayBaseAddressArray = {Memory.externBaseAddress, -1 /*Memory.globalPointer*/, 
-                                    Memory.dataBaseAddress, Memory.heapBaseAddress, 
-               							-1 /*Memory.stackPointer*/, Memory.kernelDataBaseAddress, 
-               							Memory.memoryMapBaseAddress };
+      private int[] displayBaseAddressArray = {Memory.externBaseAddress, 
+                                    Memory.dataBaseAddress, Memory.heapBaseAddress,  -1 /*Memory.globalPointer*/,
+               							-1 /*Memory.stackPointer*/, Memory.textBaseAddress, Memory.kernelDataBaseAddress, 
+               							Memory.memoryMapBaseAddress, };
       	// Must agree with above in number and order...
-      String[] descriptions =         { " (.extern)", "current $gp", " (.data)", " (heap)", 
-                                           "current $sp"," (.kdata)"," (MMIO)" };   
+      String[] descriptions =         { " (.extern)", " (.data)", " (heap)", "current $gp", 
+                                           "current $sp", " (.text)", " (.kdata)"," (MMIO)" };   
+   												   
        private void initializeBaseAddressChoices() {
          // Also must agree in number and order.  Upon combo box item selection, will invoke
       	// action listener for that item's button.  
@@ -333,6 +332,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          baseAddressButtons[STACK_POINTER_BASE_ADDRESS_INDEX]=stakButton; 
          baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX]=kernButton;
          baseAddressButtons[MMIO_BASE_ADDRESS_INDEX]=mmioButton;
+         baseAddressButtons[TEXT_BASE_ADDRESS_INDEX]=textButton;
          displayBaseAddresses = displayBaseAddressArray;
          displayBaseAddressChoices = createBaseAddressLabelsArray(displayBaseAddressArray, descriptions);
          defaultBaseAddressIndex = DATA_BASE_ADDRESS_INDEX;
@@ -363,6 +363,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          } 
          else if (Memory.inMemoryMapSegment(address)) {
             return MMIO_BASE_ADDRESS_INDEX;
+         } 
+         else if (Memory.inTextSegment(address)) { // DPS. 8-July-2013
+            return TEXT_BASE_ADDRESS_INDEX;
          }
          int shortDistance = 0x7fffffff;
          int thisDistance;
@@ -396,31 +399,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             shortDistance = thisDistance;
             desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
          }      	
-      	/*
-         if (address >= Memory.externBaseAddress) {
-            if (address < Memory.globalPointer) {
-               desiredComboBoxIndex = EXTERN_BASE_ADDRESS_INDEX;
-            }
-            else if (address < Memory.dataBaseAddress) {
-               desiredComboBoxIndex = GLOBAL_POINTER_ADDRESS_INDEX;
-            } 
-            else if (address < Memory.heapBaseAddress) {
-               desiredComboBoxIndex = DATA_BASE_ADDRESS_INDEX;
-            } 
-            else if (Math.abs(address-Memory.heapBaseAddress) < Math.abs(address-Memory.stackPointer)) {
-               desiredComboBoxIndex = HEAP_BASE_ADDRESS_INDEX;
-            } 
-            else {
-               desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
-            }
-         } 
-         else if (Memory.inKernelDataSegment(address)) {
-            desiredComboBoxIndex = KERNEL_DATA_BASE_ADDRESS_INDEX;
-         } 
-         else if (Memory.inMemoryMapSegment(address)) {
-            desiredComboBoxIndex = MMIO_BASE_ADDRESS_INDEX;
-         }
-      	*/
          return desiredComboBoxIndex;
       }
    
@@ -533,7 +511,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   ((DataTableModel)dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Globals.memory.getWordNoNotify(address), valueBase),row,column);
                } 
                    catch (AddressErrorException aee) {
-                     ((DataTableModel)dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(0, valueBase),row,column);
+                     // Bit of a hack here.  Memory will throw an exception if you try to read directly from text segment when the
+                  	// self-modifying code setting is disabled.  This is a good thing if it is the executing MIPS program trying to
+                  	// read.  But not a good thing if it is the DataSegmentDisplay trying to read.  I'll trick Memory by 
+                  	// temporarily enabling the setting as "non persistent" so it won't write through to the registry.
+                     if (Memory.inTextSegment(address)) {
+                        int displayValue = 0;
+                        if (!Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+                           Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, true);
+                           try {
+                              displayValue = Globals.memory.getWordNoNotify(address);
+                           } 
+                               catch (AddressErrorException e) { 
+                              // Still got an exception?  Doesn't seem possible but if we drop through it will write default value 0.
+                              }
+                           Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, false);
+                        }
+                        ((DataTableModel)dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(displayValue, valueBase),row,column);
+                     }
                   }
                address += BYTES_PER_VALUE;
             }
@@ -619,6 +614,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          heapButton.setEnabled(false);
          extnButton.setEnabled(false);
          mmioButton.setEnabled(false);
+         textButton.setEnabled(false);
          kernButton.setEnabled(false);
          prevButton.setEnabled(false);
          nextButton.setEnabled(false);
@@ -635,6 +631,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          heapButton.setEnabled(true);
          extnButton.setEnabled(true);
          mmioButton.setEnabled(true);
+         textButton.setEnabled(settings.getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED));
          kernButton.setEnabled(true);
          prevButton.setEnabled(true);
          nextButton.setEnabled(true);
@@ -649,6 +646,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          // set initial states
          disableAllButtons();
       	// add tool tips
+      	// NOTE: For buttons that are now combo box items, the tool tips are not displayed w/o custom renderer.
          globButton.setToolTipText("View range around global pointer");
          stakButton.setToolTipText("View range around stack pointer");
          heapButton.setToolTipText("View range around heap base address "+
@@ -659,6 +657,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                          Binary.intToHexString(Globals.memory.externBaseAddress));
          mmioButton.setToolTipText("View range around MMIO base address "+
                          Binary.intToHexString(Globals.memory.memoryMapBaseAddress));
+         textButton.setToolTipText("View range around program code "+
+                         Binary.intToHexString(Globals.memory.textBaseAddress));
          prevButton.setToolTipText("View next lower address range; hold down for rapid fire");
          nextButton.setToolTipText("View next higher address range; hold down for rapid fire");
          dataButton.setToolTipText("View range around static data segment base address "+
@@ -738,6 +738,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      updateModelForMemoryRange(firstAddress);
                   }
                });      
+      
+         textButton.addActionListener( 
+                new ActionListener() {
+                   public void actionPerformed(ActionEvent ae) {
+                     userOrKernelMode = USER_MODE;
+                     homeAddress = Globals.memory.textBaseAddress;
+                     firstAddress = homeAddress;
+                     firstAddress = setFirstAddressAndPrevNextButtonEnableStatus(firstAddress);
+                     updateModelForMemoryRange(firstAddress);
+                  }
+               });      
       	
          dataButton.addActionListener( 
                 new ActionListener() {
@@ -768,7 +779,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// PrevButton and NextButton are enabled/disabled appropriately.
    	//
        private int setFirstAddressAndPrevNextButtonEnableStatus(int lowAddress) {
-         int lowLimit = (userOrKernelMode==USER_MODE) ? Math.min(Globals.memory.dataSegmentBaseAddress,
+         int lowLimit = (userOrKernelMode==USER_MODE) ? Math.min(Math.min(Globals.memory.textBaseAddress,
+            													 Globals.memory.dataSegmentBaseAddress),
             																		Globals.memory.dataBaseAddress)
                                                       : Globals.memory.kernelDataBaseAddress;
          int highLimit= (userOrKernelMode==USER_MODE) ? Globals.memory.userHighAddress
@@ -801,10 +813,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 * @param obj Auxiliary object with additional information.
    	 */
    	
-       public void update(Observable observable, Object obj) {
+       public void update(Observable observable, Object obj) { 
          if (observable == mars.simulator.Simulator.getInstance()) {
             SimulatorNotice notice = (SimulatorNotice) obj;
             if (notice.getAction()==SimulatorNotice.SIMULATOR_START) {
+            
                // Simulated MIPS execution starts.  Respond to memory changes if running in timed
             	// or stepped mode.
                if (notice.getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.getMaxSteps()==1) {
@@ -817,8 +830,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                Memory.getInstance().deleteObserver(this);
             }
          } 
-         else if (obj instanceof MemoryAccessNotice) { 
-         	// NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
+         else if (observable == settings) { 
+            // Suspended work in progress. Intended to disable combobox item for text segment. DPS 9-July-2013.
+            //baseAddressSelector.getModel().getElementAt(TEXT_BASE_ADDRESS_INDEX)
+            //*.setEnabled(settings.getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED));
+         }
+         else if (obj instanceof MemoryAccessNotice) {          	// NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
             MemoryAccessNotice access = (MemoryAccessNotice) obj;
             if (access.getAccessType()==AccessNotice.WRITE) {
                int address = access.getAddress();
@@ -941,9 +958,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   Globals.memory.setRawWord(address,val);
                } 
                 // somehow, user was able to display out-of-range address.  Most likely to occur between
-                // stack base and Kernel.
+                // stack base and Kernel.  Also text segment with self-modifying-code setting off.
                    catch (AddressErrorException aee) {
-                     val = 0;
+                     return;
                   }
             }// end synchronized block
             int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();

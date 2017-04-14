@@ -73,6 +73,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          RegisterFile.resetRegisters();
          Coprocessor1.resetRegisters();
          Coprocessor0.resetRegisters();
+
 			executePane.getRegistersWindow().clearHighlighting();
          executePane.getRegistersWindow().updateRegisters();
 			executePane.getCoprocessor1Window().clearHighlighting();
@@ -81,6 +82,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			executePane.getCoprocessor0Window().updateRegisters();
 			executePane.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress); 
          executePane.getDataSegmentWindow().clearHighlighting();
+			executePane.getTextSegmentWindow().resetModifiedSourceCode();
          executePane.getTextSegmentWindow().setCodeHighlighting(true);
          executePane.getTextSegmentWindow().highlightStepAtPC();
          mainUI.getRegistersPane().setSelectedComponent(executePane.getRegistersWindow());

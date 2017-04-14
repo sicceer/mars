@@ -53,7 +53,7 @@ public class MemoryAccessNotice extends AccessNotice {
   /** Constructor will be called only within this package, so assume
    *  address is in valid range.
 	*/
-   MemoryAccessNotice(int type, int address, int value) {
+ public  MemoryAccessNotice(int type, int address, int value) {
      super(type);
 	  this.address = address;
 	  this.length = Memory.WORD_LENGTH_BYTES;

@@ -1,6 +1,7 @@
    package mars.venus;
 	
    import mars.*;
+   import mars.simulator.*;
    import mars.mips.hardware.*;
    import mars.mips.instructions.*;
    import javax.swing.*;
@@ -43,7 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	 *   @author Team JSpim
 	 **/  
 	 
-    public class TextSegmentWindow extends JInternalFrame {
+    public class TextSegmentWindow extends JInternalFrame implements Observer {
       private  JPanel programArgumentsPanel;  // DPS 17-July-2008
       private  JTextField programArgumentsTextField; // DPS 17-July-2008
       private static final int PROGRAM_ARGUMENT_TEXTFIELD_COLUMNS = 40;
@@ -59,6 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 */
       private  int[] intAddresses;      // index is table model row, value is text address
       private  Hashtable addressRows;   // key is text address, value is table model row
+      private  Hashtable<Integer, ModifiedCode> executeMods;   // key is table model row, value is original code, basic, source.
       private  Container contentPane;
       private  TextTableModel tableModel;
       private Font tableCellFont = new Font("Monospaced",Font.PLAIN,12);
@@ -75,7 +77,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private static final int BASIC_COLUMN = 3;
       private static final int SOURCE_COLUMN = 4;
    	
-      private static final Font monospacedPlain12Point = new Font("Monospaced",Font.PLAIN,12); 
+      private static final Font monospacedPlain12Point = new Font("Monospaced",Font.PLAIN,12);
+   	// The following is displayed in the Basic and Source columns if existing code is overwritten using self-modifying code feature 
+      private static final String modifiedCodeMarker = " ------ ";
    	     
    	/**
    	  *  Constructor, sets up a new JInternalFrame.
@@ -83,6 +87,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	
        public TextSegmentWindow(){
          super("Text Segment", true, false, true, true);
+         Simulator.getInstance().addObserver(this);
+         Globals.getSettings().addObserver(this);
          contentPane = this.getContentPane();
          codeHighlighting = true;
          breakpointsEnabled = true;
@@ -106,6 +112,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          data = new Object[sourceStatementList.size()][columnNames.length];
          intAddresses = new int[data.length];
          addressRows = new Hashtable(data.length);
+         executeMods = new Hashtable<Integer,ModifiedCode>(data.length);
       	// Get highest source line number to determine #leading spaces so line numbers will vertically align
       	// In multi-file situation, this will not necessarily be the last line b/c sourceStatementList contains
       	// source lines from all files.  DPS 3-Oct-10
@@ -182,7 +189,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          contentPane.add(tableScroller);
          if (Globals.getSettings().getProgramArguments()) {
             addProgramArgumentsPanel();  
-         }    
+         } 
+      	 
+         deleteAsTextSegmentObserver();
+         if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            addAsTextSegmentObserver();
+         }
       }
    	
    	////////////  Support for program arguments added DPS 17-July-2008 //////////////
@@ -254,12 +266,151 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          if (contentPane.getComponentCount() == 0) 
             return; // ignore if no content to change
          ArrayList sourceStatementList = Globals.program.getMachineList();
-         for(int i=0; i < sourceStatementList.size(); i++){
-            ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i); 
-            table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);
+         for(int i=0; i < sourceStatementList.size(); i++) {
+            // Loop has been extended to cover self-modifying code.  If code at this memory location has been
+         	// modified at runtime, construct a ProgramStatement from the current address and binary code
+         	// then display its basic code.  DPS 11-July-2013
+            if (executeMods.get(i) == null) { // not modified, so use original logic.
+               ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i); 
+               table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);
+            }
+            else { 
+               try {
+                  ProgramStatement statement = new ProgramStatement(
+                     mars.util.Binary.stringToInt((String)table.getModel().getValueAt(i,CODE_COLUMN)),
+                     mars.util.Binary.stringToInt((String)table.getModel().getValueAt(i,ADDRESS_COLUMN))
+                     ); 
+                  table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);					
+               } 
+                   catch (NumberFormatException e) { // should never happen but just in case...
+                     table.getModel().setValueAt("", i, BASIC_COLUMN);
+                  }
+            }
          }
       }
    
+   
+   
+     	/** Required by Observer interface.  Called when notified by an Observable that we are registered with.
+   	 *  The Observable here is a delegate of the Memory object, which lets us know of memory operations.
+   	 *  More precisely, memory operations only in the text segment, since that is the only range of
+   	 *  addresses we're registered for.  And we're only interested in write operations.
+   	 * @param observable The Observable object who is notifying us
+   	 * @param obj Auxiliary object with additional information.
+   	 */
+   
+       public void update(Observable observable, Object obj) { 
+         if (observable == mars.simulator.Simulator.getInstance()) {
+          
+            SimulatorNotice notice = (SimulatorNotice) obj;
+            if (notice.getAction()==SimulatorNotice.SIMULATOR_START) {
+               // Simulated MIPS execution starts.  Respond to text segment changes only if self-modifying code
+            	// enabled.  I commented out conditions that would further limit it to running in timed or stepped mode.
+            	// Seems reasonable for text segment display to be accurate in cases where existing code is overwritten
+            	// even when running at unlimited speed.  DPS 10-July-2013
+               deleteAsTextSegmentObserver();
+               if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) { // && (notice.getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.getMaxSteps()==1)) {
+                  addAsTextSegmentObserver();
+               }
+            } 
+         } 
+         else if (observable == Globals.getSettings()) { 
+            deleteAsTextSegmentObserver();
+            if (Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+               addAsTextSegmentObserver();
+            }
+         }
+         else if (obj instanceof MemoryAccessNotice) { 
+         	// NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
+         	// This will occur only if running program has written to text segment (self-modifying code)
+            MemoryAccessNotice access = (MemoryAccessNotice) obj;
+            if (access.getAccessType()==AccessNotice.WRITE) { 
+               int address = access.getAddress();
+               int value = access.getValue();
+               String strValue = mars.util.Binary.intToHexString(access.getValue());
+               String strBasic = modifiedCodeMarker;
+               String strSource = modifiedCodeMarker;
+            // Translate the address into table model row and modify the values in that row accordingly.
+               int row = 0;
+               try {
+                  row = findRowForAddress(address);
+               } 
+                   catch (IllegalArgumentException e) {
+                     return; // do nothing if address modified is outside the range of original program.
+                  }
+               ModifiedCode mc = executeMods.get(row);
+               if (mc==null) { // if not already modified
+                  // Not already modified and new code is same as original --> do nothing.
+                  if (tableModel.getValueAt(row, CODE_COLUMN).equals(strValue)) {
+                     return;
+                  }
+                  mc = new ModifiedCode(
+                        					row,
+                        					tableModel.getValueAt(row, CODE_COLUMN),
+                        					tableModel.getValueAt(row, BASIC_COLUMN),
+                        					tableModel.getValueAt(row, SOURCE_COLUMN)
+                        					);
+                  executeMods.put(row, mc);
+                  // make a ProgramStatement and get basic code to display in BASIC_COLUMN
+                  strBasic = new ProgramStatement(value,address).getPrintableBasicAssemblyStatement();
+               } 
+               else {
+               // If restored to original value, restore the basic and source
+               // This will be the case upon backstepping.
+                  if (mc.getCode().equals(strValue)) {
+                     strBasic = (String) mc.getBasic();
+                     strSource = (String) mc.getSource();
+                  	// remove from executeMods since we are back to original
+                     executeMods.remove(row);
+                  } 
+                  else {
+                  // make a ProgramStatement and get basic code to display in BASIC_COLUMN
+                     strBasic = new ProgramStatement(value,address).getPrintableBasicAssemblyStatement();
+                  }
+               }
+            	// For the code column, we don't want to do the following:					
+               //       tableModel.setValueAt(strValue,  row, CODE_COLUMN)
+            	// because that method will write to memory using Memory.setRawWord() which will
+            	// trigger notification to observers, which brings us back to here!!!  Infinite 
+            	// indirect recursion results.  Neither fun nor productive.  So what happens is
+            	// this: (1) change to memory cell causes setValueAt() to be automatically be
+            	// called.  (2) it updates the memory cell which in turn notifies us which invokes
+            	// the update() method - the method we're in right now.  All we need to do here is
+            	// update the table model then notify the controller/view to update its display.
+               data[row][CODE_COLUMN] = strValue;
+               tableModel.fireTableCellUpdated(row, CODE_COLUMN);
+            	// The other columns do not present a problem since they are not editable by user.
+               tableModel.setValueAt(strBasic,  row, BASIC_COLUMN);
+               tableModel.setValueAt(strSource, row, SOURCE_COLUMN);
+            	// Let's update the value displayed in the DataSegmentWindow too.  But it only observes memory while 
+            	// the MIPS program is running, and even then only in timed or step mode.  There are good reasons
+            	// for that.  So we'll pretend to be Memory observable and send it a fake memory write update.
+               try {
+                  Globals.getGui().getMainPane().getExecutePane().getDataSegmentWindow()
+                         .update(Memory.getInstance(),new MemoryAccessNotice(AccessNotice.WRITE, address, value));
+               } 
+                   catch (Exception e) {
+                  // Not sure if anything bad can happen in this sequence, but if anything does we can let it go.
+                  }
+            }
+         }
+      }
+   
+   	/**
+   	 *  Called by RunResetAction to restore display of any table rows that were
+   	 *  overwritten due to self-modifying code feature.
+   	 */
+       void resetModifiedSourceCode() {
+         if (executeMods != null && !executeMods.isEmpty()) {
+            for (Enumeration<ModifiedCode> elements = executeMods.elements(); elements.hasMoreElements();) {
+               ModifiedCode mc = elements.nextElement();
+               tableModel.setValueAt(mc.getCode(), mc.getRow(), CODE_COLUMN);
+               tableModel.setValueAt(mc.getBasic(), mc.getRow(), BASIC_COLUMN);
+               tableModel.setValueAt(mc.getSource(), mc.getRow(), SOURCE_COLUMN);
+            }
+            executeMods.clear();
+         }
+      }		
    	
    	/**
    	 *  Return code address as an int, for the specified row of the table.  This should only
@@ -373,7 +524,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public void highlightStepAtAddress(int address, boolean inDelaySlot) {
          highlightAddress = address;
       	// Scroll if necessary to assure highlighted row is visible.
-         table.scrollRectToVisible(table.getCellRect(findRowForAddress(address), 0, true));
+         int row = 0;
+         try {
+            row = findRowForAddress(address);
+         } 
+             catch (IllegalArgumentException e) {
+               return;
+            }
+         table.scrollRectToVisible(table.getCellRect(row, 0, true));
          this.inDelaySlot = inDelaySlot;// Added 25 June 2007
          // Trigger highlighting, which is done by the column's cell renderer.
          // IMPLEMENTATION NOTE: Pretty crude implementation; mark all rows 
@@ -421,7 +579,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	*/
    	
        void selectStepAtAddress(int address) {
-         int addressRow = findRowForAddress(address);
+         int addressRow = 0;
+         try {
+            addressRow = findRowForAddress(address);
+         } 
+             catch (IllegalArgumentException e) {
+               return;
+            }
          // Scroll to assure desired row is centered in view port.
          int addressSourceColumn = table.convertColumnIndexToView(SOURCE_COLUMN);
          Rectangle sourceCell = table.getCellRect(addressRow, addressSourceColumn, true);
@@ -461,7 +625,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       
       }
    
+      /*
+   	 *  Little convenience method to add this as observer of text segment
+   	 */   
+       private void addAsTextSegmentObserver() {
+         try {
+            Memory.getInstance().addObserver(this, Memory.textBaseAddress, Memory.dataSegmentBaseAddress);
+         } 
+             catch (AddressErrorException aee)  { }
+      }
    	
+      /*
+   	 *  Little convenience method to remove this as observer of text segment
+   	 */   	
+       private void deleteAsTextSegmentObserver() {
+         Memory.getInstance().deleteObserver(this);
+      }   
+   		
       /*
    	 *  Re-order the Text segment columns according to saved preferences.
    	 */
@@ -485,13 +665,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  a couple different public methods.  Returns the table row 
    	 *  corresponding to this address.
    	 */
-       private int findRowForAddress(int address) {
+       private int findRowForAddress(int address) throws IllegalArgumentException {
          int addressRow = 0;
          try {
             addressRow = ((Integer)addressRows.get(new Integer(address))).intValue();
          } 
              catch (NullPointerException e) {
-               return addressRow;// if address not in map, do nothing.
+               throw new IllegalArgumentException(); // address not found in map
+               //return addressRow;// if address not in map, do nothing.
             }
          return addressRow;
       }  
@@ -540,7 +721,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public boolean isCellEditable(int row, int col) {
             //Note that the data/cell address is constant,
             //no matter where the cell appears onscreen.
-            if (col == BREAK_COLUMN) { 
+            if (col == BREAK_COLUMN  || (col == CODE_COLUMN && Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED))) { 
                return true;
             } 
             else {
@@ -548,14 +729,53 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
          }
       
-        /*
-         * Don't need to implement this method unless your table's
-         * data can change.
+        /**
+         * Set cell contents in the table model. Overrides inherited empty method.  
+         * Straightforward process except for the Code column.
          */
+          @Override
           public void setValueAt(Object value, int row, int col) {
-            data[row][col] = value;
-            fireTableCellUpdated(row, col);
+            if (col != CODE_COLUMN) {
+               data[row][col] = value;
+               fireTableCellUpdated(row, col);
+               return;
+            }	
+         	// Handle changes in the Code column.		 
+            int val=0;
+            int address=0; 
+            if (value.equals(data[row][col])) 
+               return;
+            try {
+               val = mars.util.Binary.stringToInt((String) value);
+            }
+                catch (NumberFormatException nfe) {
+                  data[row][col] = "INVALID";
+                  fireTableCellUpdated(row, col);
+                  return;
+               }   
+            // calculate address from row and column
+            try {
+               address = mars.util.Binary.stringToInt((String)data[row][ADDRESS_COLUMN]);
+            }
+                catch (NumberFormatException nfe) {
+                  // can't really happen since memory addresses are completely under
+                  // the control of my software.
+               }				
+         	//  Assures that if changed during MIPS program execution, the update will
+         	//  occur only between MIPS instructions.
+            synchronized (Globals.memoryAndRegistersLock) {
+               try {
+                  Globals.memory.setRawWord(address,val);
+               } 
+                // somehow, user was able to display out-of-range address.  Most likely to occur between
+                // stack base and Kernel.  
+                   catch (AddressErrorException aee) {;
+                     return;
+                  }
+            }// end synchronized block
+            return;
          }
+      
       
       
           private void printDebugData() {
@@ -573,6 +793,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
       }  
    
+       private class ModifiedCode {
+         private Integer row;
+         private Object code, basic, source;
+          private ModifiedCode(Integer row, Object code, Object basic, Object source) {
+            this.row = row;
+            this.code = code;
+            this.basic = basic;
+            this.source = source;
+         }
+          private Integer getRow() { 
+            return this.row; }
+          private Object getCode() { 
+            return this.code; }
+          private Object getBasic() { 
+            return  this.basic; }
+          private Object getSource() { 
+            return this.source; }
+      }
    
      /*  a custom table cell renderer that we'll use to highlight the current line of 
    	*  source code when executing using Step or breakpoint.

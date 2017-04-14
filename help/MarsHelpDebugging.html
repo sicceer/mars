@@ -1,12 +1,11 @@
 <html>
-<title>MARS 4.3 help contents
+<title>MARS 4.4 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.3</h4>
-<h4>January 2013</h4>
-
+<h4>Release 4.4</h4>
+<h4>August 2013</h4>
 <h4>Interactive Debugging Features</h4>
 </center>
 
@@ -68,7 +67,8 @@ section of memory, the previous, or back to the initial (home) range.  A combo b
 also provided to view memory contents in the vicinity of the stack pointer 
 (contents of MIPS $sp register), global pointer (contents of MIPS $gp register),
 the heap base address (0x10040000), .extern globals (0x10000000),
-the kernel data segment (0x90000000), or memory-mapped IO (MMIO, 0xFFFF0000).</li>
+the kernel data segment (0x90000000), or memory-mapped IO (MMIO, 0xFFFF0000).
+<em>Starting with Mars 4.4,</em> raw text segment contents can also be displayed.</li>
 
 <li>Contents of any data segment memory word and almost any MIPS register can be modified by 
 editing its displayed table cell.  Double-click on a cell to edit it and press the Enter key
@@ -79,6 +79,12 @@ in either decimal or hexadecimal (leading "0x").  Negative hexadecimal
 values can be entered in either two's complement or signed format.  Note
 that three of the integer registers (zero, program counter, return address) 
 cannot be edited.</li>
+
+<li><em>New in 4.4</em> If the setting for Self-Modifying Code is enabled
+(disabled by default, look in the Settings menu), text segment binary
+code can be modified using the same technique described above. It can also
+be modified by double-clicking on a cell in the Text Segment display's Code
+column.</li>
 
 <li>Contents of cells representing floating point registers can be edited 
 as described above and will accept valid hexadecimal or decimal floating point

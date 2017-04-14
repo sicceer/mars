@@ -9,7 +9,7 @@
    import java.net.*;
 
 /*
-Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -74,7 +74,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private JMenuItem runGo, runStep, runBackstep, runReset, runAssemble, runStop, runPause, runClearBreakpoints, runToggleBreakpoints;
       private JCheckBoxMenuItem settingsLabel, settingsPopupInput, settingsValueDisplayBase, settingsAddressDisplayBase,
               settingsExtended, settingsAssembleOnOpen, settingsAssembleAll, settingsWarningsAreErrors, settingsStartAtMain,
-      		  settingsDelayedBranching, settingsProgramArguments;
+      		  settingsDelayedBranching, settingsProgramArguments, settingsSelfModifyingCode;
       private JMenuItem settingsExceptionHandler, settingsEditor, settingsHighlighting, settingsMemoryConfiguration;
       private JMenuItem helpHelp, helpAbout;
          
@@ -99,7 +99,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      settingsExtendedAction, settingsAssembleOnOpenAction, settingsAssembleAllAction,
       					settingsWarningsAreErrorsAction, settingsStartAtMainAction, settingsProgramArgumentsAction,
       					settingsDelayedBranchingAction, settingsExceptionHandlerAction, settingsEditorAction,
-      					settingsHighlightingAction, settingsMemoryConfigurationAction;    
+      					settingsHighlightingAction, settingsMemoryConfigurationAction, settingsSelfModifyingCodeAction;    
       private Action helpHelpAction, helpAboutAction;
    
    
@@ -417,6 +417,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                									  "If set, delayed branching will occur during MIPS execution.",
                									  null,null,
                									  mainUI);
+            settingsSelfModifyingCodeAction  = new SettingsSelfModifyingCodeAction("Self-modifying code",
+                                            null,
+               									  "If set, the MIPS program can write and branch to both text and data segments.",
+               									  null,null,
+               									  mainUI);
             settingsEditorAction          = new SettingsEditorAction("Editor...",
                                             null,
                									  "View and modify text editor settings.",
@@ -582,6 +587,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          settingsExtended.setSelected(Globals.getSettings().getExtendedAssemblerEnabled());
          settingsDelayedBranching = new JCheckBoxMenuItem(settingsDelayedBranchingAction);
          settingsDelayedBranching.setSelected(Globals.getSettings().getDelayedBranchingEnabled());
+         settingsSelfModifyingCode = new JCheckBoxMenuItem(settingsSelfModifyingCodeAction);
+         settingsSelfModifyingCode.setSelected(Globals.getSettings().getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED));
          settingsAssembleOnOpen = new JCheckBoxMenuItem(settingsAssembleOnOpenAction);
          settingsAssembleOnOpen.setSelected(Globals.getSettings().getAssembleOnOpenEnabled());
          settingsAssembleAll = new JCheckBoxMenuItem(settingsAssembleAllAction);
@@ -610,6 +617,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          settings.addSeparator();
          settings.add(settingsExtended);
          settings.add(settingsDelayedBranching);
+         settings.add(settingsSelfModifyingCode);
          settings.addSeparator();
          settings.add(settingsEditor);
          settings.add(settingsHighlighting);

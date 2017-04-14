@@ -79,6 +79,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    		   p  -- Project mode - assemble all files in the same directory as given file.<br>
    	  se<n>  -- terminate MARS with integer exit code <n> if a simulation (run) error occurs.<br>
            sm  -- Start execution at Main - Execution will start at program statement globally labeled main.<br>
+          smc  -- Self Modifying Code - Program can write and branch to either text or data segment<br>
            we  -- assembler Warnings will be considered Errors<br>
           <n>  -- where <n> is an integer maximum count of steps to simulate.<br>
                   If 0, negative or not specified, there is no maximum.<br>
@@ -106,6 +107,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private boolean warningsAreErrors; // Whether assembler warnings should be considered errors.
       private boolean startAtMain; // Whether to start execution at statement labeled 'main' 
       private boolean countInstructions; // Whether to count and report number of instructions executed 
+      private boolean selfModifyingCode; // Whether to allow self-modifying code (e.g. write to text segment)
       private static final String rangeSeparator = "-";
       private static final int splashDuration = 2000; // time in MS to show splash screen
       private static final int memoryWordsPerLine = 4; // display 4 memory words, tab separated, per line
@@ -142,6 +144,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             warningsAreErrors = false;
             startAtMain = false;
             countInstructions = false;
+				selfModifyingCode = false;
             instructionCount = 0;
             assembleErrorExitCode = 0;
             simulateErrorExitCode = 0;
@@ -392,6 +395,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                startAtMain = true;
                continue;
             }
+            if (args[i].toLowerCase().equals("smc")) { // added 5-Jul-2013 DPS
+               selfModifyingCode = true;
+               continue;
+            }
             if (args[i].toLowerCase().equals("ic")) { // added 19-Jul-2012 DPS
                countInstructions = true;
                continue;
@@ -458,7 +465,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return programRan;
          }
          try {
-            Globals.getSettings().setDelayedBranchingEnabledNonPersistent(delayedBranching);
+            Globals.getSettings().setBooleanSettingNonPersistent(Settings.DELAYED_BRANCHING_ENABLED, delayedBranching);
+            Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, selfModifyingCode);
             File mainFile = new File((String) filenameList.get(0)).getAbsoluteFile();// First file is "main" file
             ArrayList filesToAssemble;
             if (assembleProject) { 
@@ -808,6 +816,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          out.println("      p  -- Project mode - assemble all files in the same directory as given file.");
          out.println("  se<n>  -- terminate MARS with integer exit code <n> if a simulation (run) error occurs.");
          out.println("     sm  -- start execution at statement with global label main, if defined");
+         out.println("    smc  -- Self Modifying Code - Program can write and branch to either text or data segment");
          out.println("    <n>  -- where <n> is an integer maximum count of steps to simulate.");
          out.println("            If 0, negative or not specified, there is no maximum.");
          out.println(" $<reg>  -- where <reg> is number or name (e.g. 5, t3, f10) of register whose ");
