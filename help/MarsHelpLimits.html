@@ -1,11 +1,11 @@
 <html>
-<title>MARS 4.4 help contents
+<title>MARS 4.5 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.4</h4>
-<h4>August 2013</h4>
+<h4>Release 4.5</h4>
+<h4>August 2014</h4>
 
 <h4>Operating Requirements</h4>
 </center>
@@ -23,7 +23,7 @@ textbook <i>Computer Organization and Design, Fourth Edition</i> by Patterson an
 Elsevier - Morgan Kaufmann, 2009.  All basic and pseudo instructions, directives,
 and system services described in Appendix B are implemented.
  
-<p>Limitations of MARS as of Release 4.4 include:
+<p>Limitations of MARS as of Release 4.5 include:
 <ul>
 <li>Memory segments (text, data, stack, kernel text, kernel data) are limited to 4MB each starting at their
 respective base addresses.</li>
@@ -38,14 +38,6 @@ The editor settings, which include font settings and display of line numbers, ar
 <li>The IDE will work only with the MARS assembler.  It cannot be used 
 with any other compiler, assembler, or simulator.  The MARS assembler and simulator
 can be used either through the IDE or from a command prompt.</li>
-
-<li><em>Bug:</em>A couple of critical Alt-key combinations do not work with some European Mac keyboard layouts.  
-For instance, the Italian Mac keyboard requires an Alt-key combination for the # symbol
-and Swedish keyboards require an Alt-key combination for the $ symbol.  We do not have the equipment to
-work on this bug, but would appreciate any of our European friends doing so.  
-Start by checking <tt>mars.venus.editors.jeditsyntax.DefaultInputHandler.keyTyped()</tt>.
-We've been told that workarounds include using the generic non-highlighting editor (checkbox in editor settings dialog) 
-or switching to Windows/Linux.  Or paste from the outside world, use alternate character then replace-all, etc.</li>
 
 <li><em>Bug:</em>The error message highlighter does not automatically select the code for the first assembly
 error if the file containing the error is not open at the time of assembly (assemble-on-open, assemble-all).</li>

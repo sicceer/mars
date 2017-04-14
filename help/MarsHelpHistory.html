@@ -4,10 +4,65 @@
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.4</h4>
-<h4>August 2013</h4>
+<h4>Release 4.5</h4>
+<h4>August 2014</h4>
 <h4>MARS Release History</h4>
 </center>
+
+<p>Mars 4.5 was released in August 2014.  Enhancements and bug fixes include:
+<ul>
+<li>The Keyboard and Display MMIO Simulator tool has been enhanced at the suggestion of Eric Wang at
+Washington State University.  Until now, all characters written to the display via the Data Transmitter
+location (low order byte of memory word 0xFFFF000C) were simply streamed to the tools' display window.
+Mr. Wang requested the ability to treat the display window as a virtual text-based terminal by
+being able to programmatically clear the window or set the (x,y) position of a text cursor.  Controlled
+placement of the text cursor (which is not displayed) allows you to, among other things, develop 
+2D text-mode games.
+  <ul>
+  <li>To clear the window, place ASCII/Unicode 12 decimal in the Data Transmitter byte.  This is the non-printing 
+  Form Feed character.
+  </li>
+  <li>To set the text cursor to a specified (x,y) position, where x is the column and y is the row,
+  place ASCII/Unicode 7 in the Data Transmitter byte, and place the (x,y) position in the unused
+  upper 24 bits of the Data Transmitter word.  Place the X-position in bits 20-31 and the Y-position in bits 8-19.
+  Position (0,0) is the upper-left corner of the display.
+  </li>
+  <li>You can resize the display window to desired dimensions prior to running your MIPS program.  
+  Dimensions are dynamically displayed in the upper border.  Note that the tool now contains a splitter between 
+  the display window and the keyboard window.  Once the program is running, changes to the display size
+  does not affect cursor positioning.</li>
+  </ul>
+ The Help window for this tool is no longer modal, so you can view it while working in other windows.  
+ The Help window contains a lot of information so you
+ will find it useful to be able to refer to it while working on your program.
+</li>
+<li>Installed the MIPS X-ray Tool developed by Marcio Roberto and colleagues at the Federal Center of 
+Technological Education of Minas Gerais in Brazil. This tool animates a display of the MIPS datapath.
+The animation occurs while stepping through program execution.  Search the Internet for "MIPS X-ray"
+to find relevant publications and other information.
+</li>
+<li>Context-sensitive help in the editor should now be easier to read.  It was implemented as a menu of
+disabled items, which caused their text to be dimmed.  The items are now enabled for greater visibility
+but clicking them will only make the list disappear.
+</li>
+<li>Bug Fix: Fixed an editor problem that affects certain European keyboards.  The syntax-highlighting editor
+ignored the Alt key, which some European keyboards require to produce the # or $ characters in particular.  
+I had no means of testing this, but Torsten Maehne in France send me a solution and Umberto
+Villano in Italy affirmed that it worked for him as well.
+</li>
+<li>Bug Fix:  Source code references to Coprocessor 1 floating point registers (e.g. $f12) 
+within macro definitions were erroneously flagged as syntax errors.  MARS permits SPIM-style
+macro parameters (which start with $ instead of %) and did not correctly distinguish them
+from floating point register names.  This has been fixed.  Thanks to Rudolf Biczok in Germany for alerting
+me to the bug.
+</li>
+<li>Bug Fix:  Corrected a bug that caused the Data Segment window to sometimes display incorrect values
+at the upper boundary of simulated memory segments.  Thanks to Yi-Yu (James) Liu from Taiwan for alerting
+me to the bug, which was introduced in Mars 4.4.
+</li>
+
+</ul>
+</p>
 
 <p>Mars 4.4 was released in August 2013.  Enhancements and bug fixes include:
 <ul>

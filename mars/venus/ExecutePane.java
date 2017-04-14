@@ -76,12 +76,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          dataSegment = new DataSegmentWindow(choosers);
          labelValues = new LabelsWindow();
          labelWindowVisible = Globals.getSettings().getLabelWindowVisibility();
+         this.add(textSegment);  // these 3 LOC moved up.  DPS 3-Sept-2014
+         this.add(dataSegment);
+         this.add(labelValues);
+			textSegment.pack();   // these 3 LOC added.  DPS 3-Sept-2014
+			dataSegment.pack();
+			labelValues.pack();
          textSegment.setVisible(true);
          dataSegment.setVisible(true);
          labelValues.setVisible(labelWindowVisible);
-         this.add(textSegment);
-         this.add(dataSegment);
-         this.add(labelValues);
+
       }
    	
    	/**
