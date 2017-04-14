@@ -156,8 +156,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          table.getColumnModel().getColumn(BREAK_COLUMN).setPreferredWidth(40); 
          table.getColumnModel().getColumn(ADDRESS_COLUMN).setPreferredWidth(80); 
          table.getColumnModel().getColumn(CODE_COLUMN).setPreferredWidth(80);
-         table.getColumnModel().getColumn(BASIC_COLUMN).setPreferredWidth(140);
-         table.getColumnModel().getColumn(SOURCE_COLUMN).setPreferredWidth(300);
+         table.getColumnModel().getColumn(BASIC_COLUMN).setPreferredWidth(160);
+         table.getColumnModel().getColumn(SOURCE_COLUMN).setPreferredWidth(280);
       	
          CodeCellRenderer codeStepHighlighter = new CodeCellRenderer(); 
          table.getColumnModel().getColumn(BASIC_COLUMN).setCellRenderer(codeStepHighlighter);

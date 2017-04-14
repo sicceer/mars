@@ -4,12 +4,40 @@
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.1</h4>
-<h4>January 2011</h4>
+<h4>Release 4.2</h4>
+<h4>August 2011</h4>
 <h4>MARS Release History</h4>
 </center>
 
- 
+<p>Mars 4.2 was released in August 2011.  Enhancements and bug fixes include:
+<ul>
+<li>Performing a Save operation on a new file will now use the file's tab
+label as the the default filename in the Save As dialog (e.g. mips1.asm).
+Previously, it did not provide a default name.
+</li>
+<li>When the "assemble all files in directory" setting is enabled (useful
+for multi-file projects), you can now switch focus from one editor tab to another
+without invalidating the current assemble operation.  You can similarly open
+additional project files.  Previously, the open or tab selection would
+invalidate the assemble operation and any paused execution state or
+breakpoints would be lost.
+</li>
+<li>The Read String syscall (syscall 8) has been fortified to prevent Java exceptions from occurring 
+when invalid values are placed in $a1.
+</li>
+<li>Will now perform runtime test for unaligned doubleword address in 
+'ldc1' and 'sdc1' instructions and trap if not aligned.  
+</li>
+<li>Basic statements in the Text Segment display now renders immediates using
+eight hex digits when displaying in hex.  Previously it rendered only
+four digits to conserve space.  This led to confusing
+results.  For instance, -1 and 0xFFFF would both be displayed as 0xFFFF
+but -1 expands to 0xFFFFFFFF and 0xFFFF expands to 0x0000FFFF.  
+</li>
+
+</ul>
+
+
 <p>Mars 4.1 was released in January 2011.  Enhancements and bug fixes include:
 <ul>
 

@@ -1,4 +1,4 @@
-Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2011,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)

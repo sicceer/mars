@@ -901,6 +901,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
    
    /**
+    *  Utility to determine if given address is doubleword-aligned.
+    *  @param address the address to check
+    *  @return true if address is doubleword-aligned, false otherwise
+    */
+       public static boolean doublewordAligned(int address) {
+         return (address % (WORD_LENGTH_BYTES+WORD_LENGTH_BYTES) == 0);
+      }
+   
+   /**
     * Utility method to align given address to next full word boundary, if not already
     * aligned.   
     * @param address  a memory address (any int value is potentially valid)
@@ -977,7 +986,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          return  address >= memoryMapBaseAddress && address < kernelHighAddress;
       }   
    
-   
+
    
    
    	

@@ -53,6 +53,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final int RUNNING = 6; 
    	/** execution terminated */
       public static final int TERMINATED = 7; 
+		/** file is being opened.  DPS 9-Aug-2011 */
+		public static final int OPENING = 8;
    
    
      ///////////////////////////////////////////////////////////////////
@@ -178,7 +180,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	  *  Resets all the values in FileStatus
    	  */
-       public static void reset(){
+       public static void reset(){ 
          systemStatus = NO_FILE;
          systemName= "";
          systemAssembled= false;
@@ -199,18 +201,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private File file;
    	
       /**
-		 *  Create a FileStatus object with FileStatis.NO_FILE for status and null for file getters.
-		 */
+   	 *  Create a FileStatus object with FileStatis.NO_FILE for status and null for file getters.
+   	 */
        public FileStatus() {
          this(FileStatus.NO_FILE,null);
       }
-		
+   	
       /**
-		 *  Create a FileStatus object with given status and file pathname.
-		 *
-		 *  @param status Initial file status.  See FileStatus static constants.
-		 *  @param pathname Full file pathname. See setPathname(String newPath) below.
-		 */   
+   	 *  Create a FileStatus object with given status and file pathname.
+   	 *
+   	 *  @param status Initial file status.  See FileStatus static constants.
+   	 *  @param pathname Full file pathname. See setPathname(String newPath) below.
+   	 */   
        public FileStatus(int status, String pathname) {
          this.status = status;
          if (pathname==null) {
@@ -238,26 +240,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public int getFileStatus() {
          return this.status;
       }
-		
-		/**
-		 *  Determine if file is "new", which means created using New but not yet saved.
-		 *  If created using Open, it is not new.
-		 *
-		 *  @return true if file was created using New and has not yet been saved, false otherwise.
-		 */
-		public boolean isNew() {
-		   return status == FileStatus.NEW_NOT_EDITED || status == FileStatus.NEW_EDITED;
-		}
-		
-		/**
-		 *  Determine if file has been modified since last save or, if not yet saved, since 
-		 *  being created using New or Open.
-		 *
-		 *  @return true if file has been modified since save or creation, false otherwise.
-		 */		
-		public boolean hasUnsavedEdits() {
-		   return status == FileStatus.NEW_EDITED || status == FileStatus.EDITED;
-		}
+   	
+   	/**
+   	 *  Determine if file is "new", which means created using New but not yet saved.
+   	 *  If created using Open, it is not new.
+   	 *
+   	 *  @return true if file was created using New and has not yet been saved, false otherwise.
+   	 */
+       public boolean isNew() {
+         return status == FileStatus.NEW_NOT_EDITED || status == FileStatus.NEW_EDITED;
+      }
+   	
+   	/**
+   	 *  Determine if file has been modified since last save or, if not yet saved, since 
+   	 *  being created using New or Open.
+   	 *
+   	 *  @return true if file has been modified since save or creation, false otherwise.
+   	 */		
+       public boolean hasUnsavedEdits() {
+         return status == FileStatus.NEW_EDITED || status == FileStatus.EDITED;
+      }
    
    	/**
    	 *  Set full file pathname. See java.io.File(String pathname) for parameter specs.
@@ -304,24 +306,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public String getParent()  {
          return (this.file==null) ? null : this.file.getParent();
       }   
-
-
+   
+   
        /**
-		  *  Update static FileStatus fields with values from this FileStatus object
-		  *  To support legacy code that depends on the static.
-		  */
-		  
-		  public void updateStaticFileStatus() {
-		    reset();
-
+   	  *  Update static FileStatus fields with values from this FileStatus object
+   	  *  To support legacy code that depends on the static.
+   	  */
+   	  
+       public void updateStaticFileStatus() {
          systemStatus = this.status;
          systemName= this.file.getPath();
          systemAssembled= false;
          systemSaved= (status==NOT_EDITED || status==RUNNABLE || status==RUNNING || status==TERMINATED);
          systemEdited= (status==NEW_EDITED || status==EDITED);
          systemFile= this.file;
-			 
-		  }
+      	 
+      }
    	
-		
    }

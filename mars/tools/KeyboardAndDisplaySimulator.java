@@ -11,6 +11,9 @@
    import mars.venus.RunSpeedPanel;
    import mars.mips.hardware.*;
    import mars.simulator.Exceptions;
+   import javax.swing.text.DefaultCaret;
+
+
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -357,6 +360,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          display.setFont(defaultFont);
          display.setEditable(false);
          display.setMargin(textAreaInsets);
+
+	// 2011-07-29: Patrik Lundin, patrik@lundin.info
+	// Added code so display autoscrolls. 
+		DefaultCaret caret = (DefaultCaret)display.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+	// end added autoscrolling
+
          displayScrollPane = new JScrollPane(display);
          displayScrollPane.setPreferredSize(preferredTextAreaDimension);
          displayPanel.add(displayScrollPane);

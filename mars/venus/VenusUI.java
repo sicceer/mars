@@ -112,7 +112,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          super(s);
          mainUI = this;
          Globals.setGui(this);
-			this.editor = new Editor(this);
+         this.editor = new Editor(this);
       		 
          double screenWidth  = Toolkit.getDefaultToolkit().getScreenSize().getWidth();
          double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
@@ -161,12 +161,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          coprocessor0Tab = new Coprocessor0Window();
          registersPane = new RegistersPane(mainUI, registersTab,coprocessor1Tab, coprocessor0Tab);
          registersPane.setPreferredSize(registersPanePreferredSize);
-			
-			//Insets defaultTabInsets = (Insets)UIManager.get("TabbedPane.tabInsets");
-			//UIManager.put("TabbedPane.tabInsets", new Insets(1, 1, 1, 1));
+      	
+      	//Insets defaultTabInsets = (Insets)UIManager.get("TabbedPane.tabInsets");
+      	//UIManager.put("TabbedPane.tabInsets", new Insets(1, 1, 1, 1));
          mainPane = new MainPane(mainUI, editor, registersTab, coprocessor1Tab, coprocessor0Tab);
-			//UIManager.put("TabbedPane.tabInsets", defaultTabInsets); 
-			
+      	//UIManager.put("TabbedPane.tabInsets", defaultTabInsets); 
+      	
          mainPane.setPreferredSize(mainPanePreferredSize);
          messagesPane= new MessagesPane();
          messagesPane.setPreferredSize(messagesPanePreferredSize);
@@ -371,7 +371,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                									  "If set, use popup dialog for input syscalls (5,6,7,8,12) instead of cursor in Run I/O window",
                									  null,null,
                									  mainUI);
-
+         
             settingsValueDisplayBaseAction = new SettingsValueDisplayBaseAction("Values displayed in hexadecimal",
                                             null,
                									  "Toggle between hexadecimal and decimal display of memory/register values",
@@ -499,11 +499,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          file.add(fileNew);
          file.add(fileOpen);
          file.add(fileClose);
-			file.add(fileCloseAll);
+         file.add(fileCloseAll);
          file.addSeparator();
          file.add(fileSave);
          file.add(fileSaveAs);
-			file.add(fileSaveAll);
+         file.add(fileSaveAll);
          if (new mars.mips.dump.DumpFormatLoader().loadDumpFormats().size() > 0) {
             file.add(fileDumpMemory);
          }
@@ -671,8 +671,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          Paste.setText("");
          FindReplace = new JButton(editFindReplaceAction);
          FindReplace.setText("");
-			SelectAll = new JButton(editSelectAllAction);
-			SelectAll.setText("");
+         SelectAll = new JButton(editSelectAllAction);
+         SelectAll.setText("");
       	
          Run = new JButton(runGoAction);
          Run.setText("");
@@ -733,7 +733,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      * setMenuStateTerminated: set upon completion of simulated execution
      */
        void setMenuState(int status) {
-         menuState = status;
+         menuState = status; 
          switch (status) {
             case FileStatus.NO_FILE:
                setMenuStateInitial();
@@ -745,7 +745,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                setMenuStateEditingNew();
                break;
             case FileStatus.NOT_EDITED:
-               setMenuStateEditing();
+               setMenuStateNotEdited(); // was MenuStateEditing. DPS 9-Aug-2011
                break;
             case FileStatus.EDITED:
                setMenuStateEditing();
@@ -759,6 +759,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             case FileStatus.TERMINATED:
                setMenuStateTerminated();
                break;
+            case FileStatus.OPENING:// This is a temporary state. DPS 9-Aug-2011
+               break;
             default:
                System.out.println("Invalid File Status: "+status);
                break;
@@ -770,10 +772,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fileNewAction.setEnabled(true);
          fileOpenAction.setEnabled(true);
          fileCloseAction.setEnabled(false);
-			fileCloseAllAction.setEnabled(false);
+         fileCloseAllAction.setEnabled(false);
          fileSaveAction.setEnabled(false);
          fileSaveAsAction.setEnabled(false);
-			fileSaveAllAction.setEnabled(false);
+         fileSaveAllAction.setEnabled(false);
          fileDumpMemoryAction.setEnabled(false);
          filePrintAction.setEnabled(false);
          fileExitAction.setEnabled(true);
@@ -801,15 +803,59 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          editRedoAction.updateRedoState();
       }
    
+      /* Added DPS 9-Aug-2011, for newly-opened files.  Retain
+   	   existing Run menu state (except Assemble, which is always true).
+   		Thus if there was a valid assembly it is retained. */
+       void setMenuStateNotEdited() {
+      /* Note: undo and redo are handled separately by the undo manager*/  
+         fileNewAction.setEnabled(true);
+         fileOpenAction.setEnabled(true);
+         fileCloseAction.setEnabled(true);
+         fileCloseAllAction.setEnabled(true);
+         fileSaveAction.setEnabled(true);
+         fileSaveAsAction.setEnabled(true);
+         fileSaveAllAction.setEnabled(true);
+         fileDumpMemoryAction.setEnabled(false);
+         filePrintAction.setEnabled(true);
+         fileExitAction.setEnabled(true);
+         editCutAction.setEnabled(true);
+         editCopyAction.setEnabled(true);
+         editPasteAction.setEnabled(true);
+         editFindReplaceAction.setEnabled(true);
+         editSelectAllAction.setEnabled(true);
+         settingsDelayedBranchingAction.setEnabled(true); 
+         settingsMemoryConfigurationAction.setEnabled(true);
+         runAssembleAction.setEnabled(true);
+			// If assemble-all, allow previous Run menu settings to remain.
+			// Otherwise, clear them out.  DPS 9-Aug-2011
+         if (!Globals.getSettings().getBooleanSetting(mars.Settings.ASSEMBLE_ALL_ENABLED)) {
+            runGoAction.setEnabled(false);
+            runStepAction.setEnabled(false);
+            runBackstepAction.setEnabled(false);
+            runResetAction.setEnabled(false);
+            runStopAction.setEnabled(false);
+            runPauseAction.setEnabled(false);
+            runClearBreakpointsAction.setEnabled(false);
+            runToggleBreakpointsAction.setEnabled(false);
+         } 
+         helpHelpAction.setEnabled(true);
+         helpAboutAction.setEnabled(true);
+         editUndoAction.updateUndoState();
+         editRedoAction.updateRedoState();
+      }
+   
+   
+   
+   
        void setMenuStateEditing() {
       /* Note: undo and redo are handled separately by the undo manager*/  
          fileNewAction.setEnabled(true);
          fileOpenAction.setEnabled(true);
          fileCloseAction.setEnabled(true);
-			fileCloseAllAction.setEnabled(true);
+         fileCloseAllAction.setEnabled(true);
          fileSaveAction.setEnabled(true);
          fileSaveAsAction.setEnabled(true);
-			fileSaveAllAction.setEnabled(true);
+         fileSaveAllAction.setEnabled(true);
          fileDumpMemoryAction.setEnabled(false);
          filePrintAction.setEnabled(true);
          fileExitAction.setEnabled(true);
@@ -842,10 +888,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fileNewAction.setEnabled(true);
          fileOpenAction.setEnabled(true);
          fileCloseAction.setEnabled(true);
-			fileCloseAllAction.setEnabled(true);
+         fileCloseAllAction.setEnabled(true);
          fileSaveAction.setEnabled(true);
          fileSaveAsAction.setEnabled(true);
-			fileSaveAllAction.setEnabled(true);
+         fileSaveAllAction.setEnabled(true);
          fileDumpMemoryAction.setEnabled(false);
          filePrintAction.setEnabled(true);
          fileExitAction.setEnabled(true);
@@ -878,10 +924,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fileNewAction.setEnabled(true);
          fileOpenAction.setEnabled(true);
          fileCloseAction.setEnabled(true);
-			fileCloseAllAction.setEnabled(true);
+         fileCloseAllAction.setEnabled(true);
          fileSaveAction.setEnabled(true);
          fileSaveAsAction.setEnabled(true);
-			fileSaveAllAction.setEnabled(true);
+         fileSaveAllAction.setEnabled(true);
          fileDumpMemoryAction.setEnabled(true);
          filePrintAction.setEnabled(true);
          fileExitAction.setEnabled(true);
@@ -915,10 +961,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fileNewAction.setEnabled(false);
          fileOpenAction.setEnabled(false);
          fileCloseAction.setEnabled(false);
-			fileCloseAllAction.setEnabled(false);
+         fileCloseAllAction.setEnabled(false);
          fileSaveAction.setEnabled(false);
          fileSaveAsAction.setEnabled(false);
-			fileSaveAllAction.setEnabled(false);
+         fileSaveAllAction.setEnabled(false);
          fileDumpMemoryAction.setEnabled(false);
          filePrintAction.setEnabled(false);
          fileExitAction.setEnabled(false);
@@ -949,10 +995,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fileNewAction.setEnabled(true);
          fileOpenAction.setEnabled(true);
          fileCloseAction.setEnabled(true);
-			fileCloseAllAction.setEnabled(true);
+         fileCloseAllAction.setEnabled(true);
          fileSaveAction.setEnabled(true);
          fileSaveAsAction.setEnabled(true);
-			fileSaveAllAction.setEnabled(true);
+         fileSaveAllAction.setEnabled(true);
          fileDumpMemoryAction.setEnabled(true);
          filePrintAction.setEnabled(true);
          fileExitAction.setEnabled(true);
@@ -1083,21 +1129,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public Action getRunAssembleAction() {
          return runAssembleAction;
       }
-		
-		/**
-		 * Have the menu request keyboard focus.  DPS 5-4-10
-		 */
-		 public void haveMenuRequestFocus() {
-		    this.menu.requestFocus();
-		}
-		
-		/**
-		 * Send keyboard event to menu for possible processing.  DPS 5-4-10
-		 * @param evt KeyEvent for menu component to consider for processing.
-		 */
-		 public void dispatchEventToMenu(KeyEvent evt) {
-		    this.menu.dispatchEvent(evt);
-		}
+   	
+   	/**
+   	 * Have the menu request keyboard focus.  DPS 5-4-10
+   	 */
+       public void haveMenuRequestFocus() {
+         this.menu.requestFocus();
+      }
+   	
+   	/**
+   	 * Send keyboard event to menu for possible processing.  DPS 5-4-10
+   	 * @param evt KeyEvent for menu component to consider for processing.
+   	 */
+       public void dispatchEventToMenu(KeyEvent evt) {
+         this.menu.dispatchEvent(evt);
+      }
      
      // pop up menu experiment 3 Aug 2006.  Keep for possible later revival.
        private void setupPopupMenu() {

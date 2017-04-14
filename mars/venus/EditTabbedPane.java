@@ -69,8 +69,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 new ChangeListener() {
                    public void stateChanged(ChangeEvent e) {
                      EditPane editPane = (EditPane) getSelectedComponent();
-                     if (editPane != null) {   
-                        EditTabbedPane.this.updateTitlesAndMenuState(editPane);
+                     if (editPane != null) {
+                        // New IF statement to permit free traversal of edit panes w/o invalidating
+                     	// assembly if assemble-all is selected.  DPS 9-Aug-2011
+                        if (Globals.getSettings().getBooleanSetting(mars.Settings.ASSEMBLE_ALL_ENABLED)) { 
+                           EditTabbedPane.this.updateTitles(editPane); 
+                        } 
+                        else {
+                           EditTabbedPane.this.updateTitlesAndMenuState(editPane); 
+                           EditTabbedPane.this.mainPane.getExecutePane().clearPane();
+                        }
                         editPane.tellEditingComponentToRequestFocusInWindow();
                      }
                   }
@@ -86,12 +94,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public EditPane getCurrentEditTab() {
          return (EditPane)this.getSelectedComponent();
       }
-
+   
       /**
-		 * Select the specified EditPane to be the current tab.
-		 *
-		 * @param editPane The EditPane tab to become current.
-		 */ 	
+   	 * Select the specified EditPane to be the current tab.
+   	 *
+   	 * @param editPane The EditPane tab to become current.
+   	 */ 	
        public void setCurrentEditTab(EditPane editPane) {
          this.setSelectedComponent(editPane);
       }
@@ -121,9 +129,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }	
    	
    /**
-	 *  Carries out all necessary operations to implement
-	 *  the New operation from the File menu.
-	 */	
+    *  Carries out all necessary operations to implement
+    *  the New operation from the File menu.
+    */	
        public void newFile() {
          EditPane editPane = new EditPane(this.mainUI);
          editPane.setSourceCode("", true);
@@ -149,32 +157,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	
    	
    /**
-	 *  Carries out all necessary operations to implement
-	 *  the Open operation from the File menu.  This
-	 *  begins with an Open File dialog.
-	 *  @return true if file was opened, false otherwise.
-	 */   	
+    *  Carries out all necessary operations to implement
+    *  the Open operation from the File menu.  This
+    *  begins with an Open File dialog.
+    *  @return true if file was opened, false otherwise.
+    */   	
        public boolean openFile() {
          return fileOpener.openFile();
       }
    
     /**
-	  * Carries out all necessary operations to open the
-	  * specified file in the editor.
-	  *  @return true if file was opened, false otherwise.
-	  */
+     * Carries out all necessary operations to open the
+     * specified file in the editor.
+     *  @return true if file was opened, false otherwise.
+     */
        public boolean openFile(File file) {
          return fileOpener.openFile(file);
       }
-
+   
    	
    /**
-	 *  Carries out all necessary operations to implement
-	 *  the Close operation from the File menu.  May return
-	 *  false, for instance when file has unsaved changes
-	 *  and user selects Cancel from the warning dialog.
-	 *  @return true if file was closed, false otherwise.
-	 */
+    *  Carries out all necessary operations to implement
+    *  the Close operation from the File menu.  May return
+    *  false, for instance when file has unsaved changes
+    *  and user selects Cancel from the warning dialog.
+    *  @return true if file was closed, false otherwise.
+    */
        public boolean closeCurrentFile() {
          EditPane editPane = getCurrentEditTab();
          if (editPane != null) {
@@ -191,10 +199,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
     	
    /**
-	 *  Carries out all necessary operations to implement
-	 *  the Close All operation from the File menu.
-	 *  @return true if files closed, false otherwise.
-	 */   	
+    *  Carries out all necessary operations to implement
+    *  the Close All operation from the File menu.
+    *  @return true if files closed, false otherwise.
+    */   	
        public boolean closeAllFiles() {
          boolean result = true;
          boolean unsavedChanges = false;
@@ -326,8 +334,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             JFileChooser saveDialog = null;
             boolean operationOK = false;
             while (!operationOK) {
-               saveDialog = new JFileChooser(editor.getCurrentSaveDirectory());
+               // Set Save As dialog directory in a logical way.  If file in
+            	// edit pane had been previously saved, default to its directory.  
+            	// If a new file (mipsN.asm), default to current save directory.
+            	// DPS 13-July-2011
+               if (editPane.isNew()) {
+                  saveDialog = new JFileChooser(editor.getCurrentSaveDirectory());
+               } 
+               else {
+                  File f = new File(editPane.getPathname());
+                  if (f != null) {
+                     saveDialog = new JFileChooser(f.getParent());
+                  } 
+                  else {
+                     saveDialog = new JFileChooser(editor.getCurrentSaveDirectory());
+                  }
+               }
+               String paneFile = editPane.getFilename();
+               if (paneFile != null) saveDialog.setSelectedFile(new File(paneFile));
+               // end of 13-July-2011 code.
                saveDialog.setDialogTitle("Save As");
+            
                int decision = saveDialog.showSaveDialog(mainUI);
                if (decision != JFileChooser.APPROVE_OPTION) {
                   return null;
@@ -442,13 +469,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          Globals.getGui().setMenuState(editPane.getFileStatus());	
       }
    
+     // Handy little utility to update the title on the current tab and the frame title bar
+     // and also to update the MARS menu state (controls which actions are enabled).
+     // DPS 9-Aug-2011
+       private void updateTitles(EditPane editPane) {
+         editor.setTitle(editPane.getPathname(), editPane.getFilename(), editPane.getFileStatus());
+         boolean assembled = FileStatus.isAssembled(); 
+         editPane.updateStaticFileStatus(); //  for legacy code that depends on the static FileStatus (pre 4.0)
+         FileStatus.setAssembled(assembled);
+      }  
    
        /**
-		  * If there is an EditPane for the given file pathname, return it else return null.
-		  * 
-		  * @param pathname Pathname for desired file
-		  * @return the EditPane for this file if it is open in the editor, or null if not.
-		  */
+   	  * If there is an EditPane for the given file pathname, return it else return null.
+   	  * 
+   	  * @param pathname Pathname for desired file
+   	  * @return the EditPane for this file if it is open in the editor, or null if not.
+   	  */
        public EditPane getEditPaneForFile(String pathname) {
          EditPane openPane = null;
          for (int i=0; i<getTabCount(); i++) {
@@ -537,6 +573,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             if (fileChooser.showOpenDialog(mainUI) == JFileChooser.APPROVE_OPTION) {
                File theFile = fileChooser.getSelectedFile();
                theEditor.setCurrentOpenDirectory(theFile.getParent());
+               //theEditor.setCurrentSaveDirectory(theFile.getParent());// 13-July-2011 DPS.
                if (!openFile(theFile)) {
                   return false;
                }
@@ -549,7 +586,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
             return true;  
          } 
-
+      
        /*
         * Open the specified file.  Return true if file opened, false otherwise
         */
@@ -566,16 +603,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             EditPane editPane = getEditPaneForFile(currentFilePath);
             if (editPane != null) {
                setSelectedComponent(editPane);
-               updateTitlesAndMenuState(editPane);
+               //updateTitlesAndMenuState(editPane); 
+               updateTitles(editPane);
                return false;
             } 
             else {
                editPane = new EditPane(mainUI);
             }
             editPane.setPathname(currentFilePath);
-            FileStatus.reset();
+            //FileStatus.reset();
             FileStatus.setName(currentFilePath);
             FileStatus.setFile(theFile);
+            FileStatus.set(FileStatus.OPENING);// DPS 9-Aug-2011
             if (theFile.canRead()) {
                Globals.program = new MIPSprogram();
                try {
@@ -610,8 +649,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                FileStatus.setEdited(false);
                FileStatus.set(FileStatus.NOT_EDITED);
                
-               updateTitlesAndMenuState(editPane);
-               mainPane.getExecutePane().clearPane();
+               // If assemble-all, then allow opening of any file w/o invalidating assembly.
+            	// DPS 9-Aug-2011
+               if (Globals.getSettings().getBooleanSetting(mars.Settings.ASSEMBLE_ALL_ENABLED)) {
+                  updateTitles(editPane);
+               } 
+               else {// this was the original code...
+                  updateTitlesAndMenuState(editPane);
+                  mainPane.getExecutePane().clearPane();  
+               }
+            
                mainPane.setSelectedComponent(EditTabbedPane.this);
                editPane.tellEditingComponentToRequestFocusInWindow();
                mostRecentlyOpenedFile = theFile;

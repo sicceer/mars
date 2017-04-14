@@ -52,10 +52,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    * newline to end.  In either case, then pad with null byte.
    */
        public void simulate(ProgramStatement statement) throws ProcessingException {
-
+      
          String inputString = "";
          int buf = RegisterFile.getValue(4); // buf addr in $a0
          int maxLength = RegisterFile.getValue(5) - 1; // $a1
+			boolean addNullByte = true;
+      	// Guard against negative maxLength.  DPS 13-July-2011
+         if (maxLength < 0) 
+         {
+            maxLength = 0;
+				addNullByte = false;
+         }
          inputString = SystemIO.readString(this.getNumber(), maxLength);
          int stringLength = Math.min(maxLength, inputString.length());
          try
@@ -70,7 +77,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                Globals.memory.setByte(buf + stringLength, '\n');
                stringLength++;
             }
-            Globals.memory.setByte(buf + stringLength, 0);
+            if (addNullByte) Globals.memory.setByte(buf + stringLength, 0);
          } 
              catch (AddressErrorException e)
             {

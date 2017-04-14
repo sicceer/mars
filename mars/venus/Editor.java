@@ -181,33 +181,58 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
    	
    	
-   	
+   	 	
+		/**
+		 *  Perform "new" operation to create an empty tab.
+		 */    	
        public void newFile() {
          editTabbedPane.newFile();
       }
-   	
+   	 	
+		/**
+		 *  Perform "close" operation on current tab's file.
+		 *  @return true if succeeded, else false.
+		 */ 
        public boolean close() {
          return editTabbedPane.closeCurrentFile();
       }
    	
+		/**
+		 *  Close all currently open files.
+		 *  @return true if succeeded, else false.
+		 */    	
        public boolean closeAll() {
          return editTabbedPane.closeAllFiles();
       }
-   	
-   
+   	 	
+		/**
+		 *  Perform "save" operation on current tab's file.
+		 *  @return true if succeeded, else false.
+		 */    
        public boolean save() {
          return editTabbedPane.saveCurrentFile();
       }
    	
-   
+		/**
+		 *  Perform "save as" operation on current tab's file.
+		 *  @return true if succeeded, else false.
+		 */     
        public boolean saveAs() {
          return editTabbedPane.saveAsCurrentFile();
       }
-   	
+		
+		/**
+		 *  Perform save operation on all open files (tabs).
+		 *  @return true if succeeded, else false.
+		 */   	
        public boolean saveAll() {
          return editTabbedPane.saveAllFiles();
       }
    	
+		/**
+		 *  Open file in a new tab.
+		 *  @return true if succeeded, else false.
+		 */
        public boolean open() {
          return editTabbedPane.openFile();
       }

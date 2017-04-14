@@ -7,9 +7,10 @@
 </center>
 
 <h3>Introduction</h3>
-A number of system services, mainly for input and output, are available for use by 
-your MIPS program.  They are described in the table below.
-<p>
+<p>A number of system services, mainly for input and output, are available for use by 
+your MIPS program.  They are described in the table below.</p>
+<p>MIPS register contents are not affected by a system call, except for result registers
+as specified in the table below.</p>
 <h3>How to use SYSCALL system services</h3>
 Step 1. Load the service number in register $v0.<br>
 Step 2. Load argument values, if any, in $a0, $a1, $a2, or $f12 as specified.<br>
@@ -49,9 +50,9 @@ Step 4. Retrieve return values, if any, from result registers as specified.<br>
   <tr><td>MIDI out</td>                     <td align="center">31</td>   <td>$a0 = pitch (0-127)<br>$a1 = duration in milliseconds<br>$a2 = instrument (0-127)<br>$a3 = volume (0-127)</td>  <td>Generate tone and return immediately.  <i>See note below table</i></td></tr>
   <tr><td>sleep</td>                        <td align="center">32</td>   <td>$a0 = the length of time to sleep in milliseconds.</td>  <td>Causes the MARS Java thread to sleep for (at least) the specified number of milliseconds. This timing will not be precise, as the Java implementation will add some overhead.</td></tr>
   <tr><td>MIDI out synchronous              <td align="center">33</td>   <td>$a0 = pitch (0-127)<br>$a1 = duration in milliseconds<br>$a2 = instrument (0-127)<br>$a3 = volume (0-127)</td>  <td>Generate tone and return upon tone completion.  <i>See note below table</i></td></tr>
-  <tr><td>print integer in hexadecimal</td> <td align="center">34</td>   <td>$a0 = integer to print</td>  <td>&nbsp;</td></tr>
-  <tr><td>print integer in binary</td>      <td align="center">35</td>   <td>$a0 = integer to print</td>  <td>&nbsp;</td></tr>
-  <tr><td>print integer as unsigned</td>    <td align="center">36</td>   <td>$a0 = integer to print</td>  <td>&nbsp;</td></tr>
+  <tr><td>print integer in hexadecimal</td> <td align="center">34</td>   <td>$a0 = integer to print</td>  <td>Displayed value is 8 hexadecimal digits, left-padding with zeroes if necessary.</td></tr>
+  <tr><td>print integer in binary</td>      <td align="center">35</td>   <td>$a0 = integer to print</td>  <td>Displayed value is 32 bits, left-padding with zeroes if necessary.</td></tr>
+  <tr><td>print integer as unsigned</td>    <td align="center">36</td>   <td>$a0 = integer to print</td>  <td>Displayed as unsigned decimal value.</td></tr>
   <tr><td align="center">(not used)</td>    <td align="center">37-39</td><td>&nbsp;</td>  <td>&nbsp;</td></tr>
   <tr><td>set seed</td>                     <td align="center">40</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).<br>$a1 = seed for corresponding pseudorandom number generator.</td>  <td>No values are returned. Sets the seed of the corresponding underlying Java pseudorandom number generator (<tt>java.util.Random</tt>). <i>See note below table</i></td></tr>
   <tr><td>random int</td>                   <td align="center">41</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).</td>  <td>$a0 contains the next pseudorandom, uniformly distributed int value from this random number generator's sequence. <i>See note below table</i></td></tr>
@@ -78,7 +79,7 @@ other: plain message (no icon displayed)
 </table>
 <br>
 <b>NOTES: Services numbered 30 and higher are not provided by SPIM</b>
-<br><b>Service 8</b> - Follows semantics of UNIX 'fgets'.  For specified length n, string can be no longer than n-1. If less than that, adds newline to end.  In either case, then pads with null byte.
+<br><b>Service 8</b> - Follows semantics of UNIX 'fgets'.  For specified length n, string can be no longer than n-1. If less than that, adds newline to end.  In either case, then pads with null byte  If n = 1, input is ignored and null byte placed at buffer address. If n < 1, input is ignored and nothing is written to the buffer.
 <br><b>Service 11</b> - Prints ASCII character corresponding to contents of low-order byte.
 <br><b>Service 13</b> - MARS implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append.  It ignores mode.  The returned file descriptor will be negative if the operation failed.  The underlying file I/O
 implementation uses <tt>java.io.FileInputStream.read()</tt> to read and <tt>java.io.FileOutputStream.write()</tt> to write.  MARS maintains file descriptors internally and allocates them starting with 0.

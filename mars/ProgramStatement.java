@@ -597,7 +597,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      break;
                   case 2 :  
                      if (valueBase == mars.venus.NumberDisplayBaseChooser.HEXADECIMAL) {
-                        result.append(mars.util.Binary.intToHalfHexString(e.iValue));
+                        result.append(mars.util.Binary.intToHexString(e.iValue)); // 13-July-2011, was: intToHalfHexString()
                      } 
                      else {
                         result.append(mars.venus.NumberDisplayBaseChooser.formatNumber(e.iValue, valueBase));

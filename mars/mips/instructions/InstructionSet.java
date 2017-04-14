@@ -239,7 +239,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                }));
          instructionList.add(
                 new BasicInstruction("mul $t1,$t2,$t3",
-            	 "Multiplication without overflow  : Set HI to high-order 32 bits, LO and $t1 to low-order 32 bits of the product of $t1 and $t2 (use mfhi to access HI, mflo to access LO)",
+            	 "Multiplication without overflow  : Set HI to high-order 32 bits, LO and $t1 to low-order 32 bits of the product of $t2 and $t3 (use mfhi to access HI, mflo to access LO)",
                 BasicInstructionFormat.R_FORMAT,
                 "011100 sssss ttttt fffff 00000 000010",
                 new SimulationCode()
@@ -1580,18 +1580,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   { 
                      int[] operands = statement.getOperands();
                      float value = Float.intBitsToFloat(Coprocessor1.getValue(operands[1]));
-							int floatSqrt = 0;
+                     int floatSqrt = 0;
                      if (value < 0.0f) {
-							   // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
-								// to act silently rather than raise Invalid Operation exception, so sqrt should do the
-								// same.  An intermediate step would be to define a setting for FCSR Invalid Operation
-								// flag, but the best solution is to simulate the FCSR register itself.
-								// FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
-							   floatSqrt = Float.floatToIntBits( Float.NaN);
+                        // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
+                     	// to act silently rather than raise Invalid Operation exception, so sqrt should do the
+                     	// same.  An intermediate step would be to define a setting for FCSR Invalid Operation
+                     	// flag, but the best solution is to simulate the FCSR register itself.
+                     	// FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
+                        floatSqrt = Float.floatToIntBits( Float.NaN);
                         //throw new ProcessingException(statement, "Invalid Operation: sqrt of negative number");
-                     } else {
-							floatSqrt = Float.floatToIntBits( (float) Math.sqrt(value));
-							}
+                     } 
+                     else {
+                        floatSqrt = Float.floatToIntBits( (float) Math.sqrt(value));
+                     }
                      Coprocessor1.updateRegister(operands[0], floatSqrt);
                   }
                }));
@@ -1821,11 +1822,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                               Coprocessor1.getValue(operands[1]+1),Coprocessor1.getValue(operands[1])));
                      long longSqrt = 0;              
                      if (value < 0.0) {
-							   // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
-								// to act silently rather than raise Invalid Operation exception, so sqrt should do the
-								// same.  An intermediate step would be to define a setting for FCSR Invalid Operation
-								// flag, but the best solution is to simulate the FCSR register itself.
-								// FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
+                        // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
+                     	// to act silently rather than raise Invalid Operation exception, so sqrt should do the
+                     	// same.  An intermediate step would be to define a setting for FCSR Invalid Operation
+                     	// flag, but the best solution is to simulate the FCSR register itself.
+                     	// FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
                         longSqrt = Double.doubleToLongBits(Double.NaN);
                         //throw new ProcessingException(statement, "Invalid Operation: sqrt of negative number");
                      } 
@@ -2744,6 +2745,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      if (operands[0]%2==1) {
                         throw new ProcessingException(statement, "first register must be even-numbered");
                      }
+                  	// IF statement added by DPS 13-July-2011.
+                     if (!Globals.memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
+                        throw new ProcessingException(statement,
+                           new AddressErrorException("address not aligned on doubleword boundary ",
+                           Exceptions.ADDRESS_EXCEPTION_LOAD, RegisterFile.getValue(operands[2]) + operands[1]));
+                     }
+                                    
                      try
                      {
                         Coprocessor1.updateRegister(operands[0],
@@ -2793,6 +2801,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      int[] operands = statement.getOperands();
                      if (operands[0]%2==1) {
                         throw new ProcessingException(statement, "first register must be even-numbered");
+                     }
+                  	// IF statement added by DPS 13-July-2011.
+                     if (!Globals.memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
+                        throw new ProcessingException(statement,
+                           new AddressErrorException("address not aligned on doubleword boundary ",
+                           Exceptions.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
                      }
                      try
                      {

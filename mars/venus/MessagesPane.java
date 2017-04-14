@@ -181,16 +181,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          buttonBox.add(Box.createVerticalGlue());
          return buttonBox;
       }
-		
-		/**
-		 *  Will select the Mars Messages tab error message that matches the given 
-		 *  specifications, if it is found. Matching is done by constructing
-		 *  a string using the parameter values and searching the text area for the last 
-		 *  occurrance of that string.
-		 *  @param fileName  A String containing the file path name.
-		 *  @param line  Line number for error message
-		 *  @param column Column number for error message
-		 */
+   	
+   	/**
+   	 *  Will select the Mars Messages tab error message that matches the given 
+   	 *  specifications, if it is found. Matching is done by constructing
+   	 *  a string using the parameter values and searching the text area for the last 
+   	 *  occurrance of that string.
+   	 *  @param fileName  A String containing the file path name.
+   	 *  @param line  Line number for error message
+   	 *  @param column Column number for error message
+   	 */
        public void selectErrorMessage(String fileName, int line, int column) {
          String errorReportSubstring = new java.io.File(fileName).getName() + ErrorList.LINE_PREFIX + line + ErrorList.POSITION_PREFIX + column;
          int textPosition = assemble.getText().lastIndexOf(errorReportSubstring);
@@ -213,16 +213,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          } 	
       }
    
-		
-		/**
-		 *  Will select the specified line in an editor tab.  If the file is open
-		 *  but not current, its tab will be made current.  If the file is not open,
-		 *  it will be opened in a new tab and made current, however the line will
-		 *  not be selected (apparent apparent problem with JEditTextArea). 
-		 *  @param fileName  A String containing the file path name.
-		 *  @param line  Line number for error message
-		 *  @param column Column number for error message
-		 */   
+   	
+   	/**
+   	 *  Will select the specified line in an editor tab.  If the file is open
+   	 *  but not current, its tab will be made current.  If the file is not open,
+   	 *  it will be opened in a new tab and made current, however the line will
+   	 *  not be selected (apparent apparent problem with JEditTextArea). 
+   	 *  @param fileName  A String containing the file path name.
+   	 *  @param line  Line number for error message
+   	 *  @param column Column number for error message
+   	 */   
        public void selectEditorTextLine(String fileName, int line, int column) {
          EditTabbedPane editTabbedPane = (EditTabbedPane) Globals.getGui().getMainPane().getEditTabbedPane();      
          EditPane editPane, currentPane = null;

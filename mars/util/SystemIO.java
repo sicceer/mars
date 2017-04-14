@@ -218,7 +218,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
       	
          if (input.length() > maxLength) {
-            return input.substring(0, maxLength);
+			   // Modified DPS 13-July-2011.  Originally: return input.substring(0, maxLength);
+            return (maxLength <= 0) ? "" : input.substring(0, maxLength);
          } 
          else {
             return  input;

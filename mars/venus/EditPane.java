@@ -89,6 +89,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          sourceCode.getDocument().addDocumentListener(
                 new DocumentListener() {
                    public void insertUpdate(DocumentEvent evt) {
+                     // IF statement added DPS 9-Aug-2011
+                  	// This method is triggered when file contents added to document
+                  	// upon opening, even though not edited by user.  The IF
+                  	// statement will sense this situation and immediately return.
+                     if (FileStatus.get() == FileStatus.OPENING) { 
+                        setFileStatus(FileStatus.NOT_EDITED); 
+                        FileStatus.set(FileStatus.NOT_EDITED);
+                        if (showingLineNumbers()) {
+                           lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
+                        }
+                        return;
+                     } 
+                  	// End of 9-Aug-2011 modification.                    
                      if (getFileStatus() == FileStatus.NEW_NOT_EDITED) {
                         setFileStatus(FileStatus.NEW_EDITED);
                      }
@@ -112,6 +125,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         default:
                            FileStatus.set(FileStatus.EDITED);
                      }
+                  	
+                     Globals.getGui().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
+                  	
                      if (showingLineNumbers()) {
                         lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
                      }
@@ -146,8 +162,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         lineNumbers.setVisible(true);
                      } 
                      else {
+                        lineNumbers.setText("");
                         lineNumbers.setVisible(false);
                      }
+                     sourceCode.revalidate(); // added 16 Jan 2012 to assure label redrawn.
                      Globals.getSettings().setEditorLineNumbersDisplayed(showLineNumbers.isSelected());
                   	// needed because caret disappears when checkbox clicked
                      sourceCode.setCaretVisible(true); 

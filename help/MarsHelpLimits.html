@@ -1,11 +1,11 @@
 <html>
-<title>MARS 4.1 help contents
+<title>MARS 4.2 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.1</h4>
-<h4>January 2011</h4>
+<h4>Release 4.2</h4>
+<h4>August 2011</h4>
 
 <h4>Operating Requirements</h4>
 </center>
@@ -23,7 +23,7 @@ textbook <i>Computer Organization and Design, Fourth Edition</i> by Patterson an
 Elsevier - Morgan Kaufmann, 2009.  All basic and pseudo instructions, directives,
 and system services described in Appendix B are implemented.
  
-<p>Limitations of MARS as of Release 4.0 include:
+<p>Limitations of MARS as of Release 4.2 include:
 <ul>
 <li>Memory segments (text, data, stack, kernel text, kernel data) are limited to 4MB each starting at their
 respective base addresses.</li>
@@ -45,6 +45,10 @@ can be used either through the IDE or from a command prompt.</li>
 error if the file containing the error is not open at the time of assembly (assemble-on-open, assemble-all).</li>
 
 <li><em>Bug:</em> The Screen Magnifier screen capture feature does not appear to work properly under Windows Vista.</li>
+
+<li><em>Bug:</em> There appears to be a memory leak in the Editor.  Several different people have independently
+reported the same behavior: severe slowdown in editor response during an extended interactive session.  
+If MARS is exited and restarted, this behavior disappears and the editor responds instantly to actions.</li>
 
 <li><em>Not a bug, but documented here anyway:</em> MIPS Branch instruction target addresses are represented by
 the relative number of words to branch.  With Release 3.4, this value reflects delayed branching,
