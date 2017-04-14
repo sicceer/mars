@@ -1,9 +1,11 @@
    package mars.mips.hardware;
-   import mars.util.*;
-   import mars.mips.instructions.*;
-   import mars.assembler.SymbolTable;
+
+   import java.util.Observer;
+
    import mars.Globals;
-   import java.util.*;
+   import mars.assembler.SymbolTable;
+   import mars.mips.instructions.Instruction;
+   import mars.util.Binary;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -159,7 +161,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    		  *  For getting the number representation of the register.
    		  *   @param n The string formatted register name to look for.
    		  *   @return The number of the register represented by the string
-			  *   or -1 if no match.
+   		  *   or -1 if no match.
    		  **/	
       		
        public static int getNumber(String n){
@@ -224,12 +226,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	
    	/**
    	 *  Will initialize the Program Counter to either the default reset value, or the address 
-		 *  associated with source program global label "main", if it exists as a text segment label
-		 *  and the global setting is set.
-		 *  @param startAtMain  If true, will set program counter to address of statement labeled
-		 *  'main' (or other defined start label) if defined.  If not defined, or if parameter false,
-		 *  will set program counter to default reset value.
-		 **/
+   	 *  associated with source program global label "main", if it exists as a text segment label
+   	 *  and the global setting is set.
+   	 *  @param startAtMain  If true, will set program counter to address of statement labeled
+   	 *  'main' (or other defined start label) if defined.  If not defined, or if parameter false,
+   	 *  will set program counter to default reset value.
+   	 **/
    	 
        public static void initializeProgramCounter(boolean startAtMain) {  
          int mainAddr = Globals.symbolTable.getAddress(SymbolTable.getStartLabel());
@@ -266,14 +268,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          return programCounter.getValue();
       }
    
-	  /**
-	   *  Returns Register object for program counter.  Use with caution.
-		*  @return program counter's Register object.
-		*/
-		public static Register getProgramCounterRegister() {
-		   return programCounter;
-		}
-		
+     /**
+      *  Returns Register object for program counter.  Use with caution.
+   	*  @return program counter's Register object.
+   	*/
+       public static Register getProgramCounterRegister() {
+         return programCounter;
+      }
+   	
      /**
       *  For returning the program counter's initial (reset) value.
    	  *  @return The program counter's initial value
@@ -285,11 +287,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	
    	/**
    	  *  Method to reinitialize the values of the registers.
-		  *  <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
-		  *  this method uses global settings from the registry.  Command-mode must operate
-		  *  using only the command switches, not registry settings.  It can be called
-		  *  from tools running stand-alone, and this is done in 
-		  *  <code>AbstractMarsToolAndApplication</code>.
+   	  *  <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
+   	  *  this method uses global settings from the registry.  Command-mode must operate
+   	  *  using only the command switches, not registry settings.  It can be called
+   	  *  from tools running stand-alone, and this is done in 
+   	  *  <code>AbstractMarsToolAndApplication</code>.
    	  **/
    	
        public static void resetRegisters(){

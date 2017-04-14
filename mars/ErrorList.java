@@ -1,8 +1,8 @@
    package mars;
    import java.util.*;
-   import java .io.*;
+   import java.io.*;
 /*
-Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -41,13 +41,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private ArrayList messages;
       private int errorCount;
       private int warningCount;
-		public static final String ERROR_MESSAGE_PREFIX = "Error";
-		public static final String WARNING_MESSAGE_PREFIX = "Warning";
-		public static final String FILENAME_PREFIX = " in ";
-		public static final String LINE_PREFIX = " line ";
-		public static final String POSITION_PREFIX = " column ";
-		public static final String MESSAGE_SEPARATOR = ": ";
-		
+      public static final String ERROR_MESSAGE_PREFIX = "Error";
+      public static final String WARNING_MESSAGE_PREFIX = "Warning";
+      public static final String FILENAME_PREFIX = " in ";
+      public static final String LINE_PREFIX = " line ";
+      public static final String POSITION_PREFIX = " column ";
+      public static final String MESSAGE_SEPARATOR = ": ";
+   	
    
    /** 
    * Constructor for ErrorList
@@ -58,15 +58,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          errorCount = 0;
          warningCount = 0;
       }
- 
+   
    /**
-	 *  Get ArrayList of error messages.
-	 *  @return ArrayList of ErrorMessage objects
-	 */
-	   public ArrayList getErrorMessages() {
-		   return messages;
-		}
-		  
+    *  Get ArrayList of error messages.
+    *  @return ArrayList of ErrorMessage objects
+    */
+       public ArrayList getErrorMessages() {
+         return messages;
+      }
+   	  
    /**
    * Determine whether error has occured or not.
    * @return <tt>true</tt> if an error has occurred (does not include warnings), <tt>false</tt> otherwise.
@@ -86,16 +86,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    /** Add new error message to end of list.
    * @param mess ErrorMessage object to be added to end of error list.
    **/
-       public void add(ErrorMessage mess) {
-		   if (errorCount > getErrorLimit()) {
-			  return;
-			}
-			if (errorCount == getErrorLimit()) {
-			   messages.add(new ErrorMessage(mess.getFilename(), mess.getLine(), mess.getPosition(),"Error Limit of "+getErrorLimit()+" exceeded."));
-				errorCount++; // subsequent errors will not be added; see if statement above
-				return;
-			}
-         messages.add(mess);
+       public void add(ErrorMessage mess){
+         add(mess, messages.size());
+      }
+   
+   /** Add new error message at specified index position.
+   * @param mess ErrorMessage object to be added to end of error list.
+   * @param index position in error list
+   **/       
+       public void add(ErrorMessage mess, int index) {
+         if (errorCount > getErrorLimit()) {
+            return;
+         }
+         if (errorCount == getErrorLimit()) {
+            messages.add(new ErrorMessage((MIPSprogram)null, mess.getLine(), mess.getPosition(),"Error Limit of "+getErrorLimit()+" exceeded."));
+            errorCount++; // subsequent errors will not be added; see if statement above
+            return;
+         }
+         messages.add(index, mess);
          if (mess.isWarning()) {
             warningCount++;
          } 
@@ -103,6 +111,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             errorCount++;
          }
       }
+       
    
    /**
    * Count of number of error messages in list.
@@ -121,7 +130,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public int warningCount() {
          return this.warningCount;
       }
-
+   
    /**
    * Check to see if error limit has been exceeded.
    * @return True if error limit exceeded, false otherwise.
@@ -133,7 +142,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
    /**
    * Get limit on number of error messages to be generated
-	* by one assemble operation.
+   * by one assemble operation.
    * @return error limit.
    **/
    
@@ -176,7 +185,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                if (m.getFilename().length() > 0) 
                   reportLine = reportLine + (new File(m.getFilename()).getPath()); //.getName());
                if (m.getLine() > 0)
-                  reportLine = reportLine + LINE_PREFIX + m.getLine();
+                  reportLine = reportLine + LINE_PREFIX  +m.getMacroExpansionHistory()+ m.getLine();
                if (m.getPosition() > 0)
                   reportLine = reportLine + POSITION_PREFIX + m.getPosition();
                reportLine = reportLine + MESSAGE_SEPARATOR + m.getMessage() + "\n";

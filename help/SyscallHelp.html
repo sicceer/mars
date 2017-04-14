@@ -82,7 +82,8 @@ other: plain message (no icon displayed)
 <br><b>Service 8</b> - Follows semantics of UNIX 'fgets'.  For specified length n, string can be no longer than n-1. If less than that, adds newline to end.  In either case, then pads with null byte  If n = 1, input is ignored and null byte placed at buffer address. If n < 1, input is ignored and nothing is written to the buffer.
 <br><b>Service 11</b> - Prints ASCII character corresponding to contents of low-order byte.
 <br><b>Service 13</b> - MARS implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append.  It ignores mode.  The returned file descriptor will be negative if the operation failed.  The underlying file I/O
-implementation uses <tt>java.io.FileInputStream.read()</tt> to read and <tt>java.io.FileOutputStream.write()</tt> to write.  MARS maintains file descriptors internally and allocates them starting with 0.
+implementation uses <tt>java.io.FileInputStream.read()</tt> to read and <tt>java.io.FileOutputStream.write()</tt> to write.  MARS maintains file descriptors internally and allocates them starting with 3.  File descriptors 0, 1 and 2 are
+always open for: reading from standard input, writing to standard output, and writing to standard error, respectively (new in release 4.3).
 <br><b>Services 13,14,15</b> - In MARS 3.7, the result register was changed to $v0 for SPIM compatability.  It was previously $a0 as erroneously printed
 in Appendix B of <i>Computer Organization and Design,</i>.
 <br><b>Service 17</b> - If the MIPS program is run under control of the MARS graphical interface (GUI), the exit code in $a0 is ignored.

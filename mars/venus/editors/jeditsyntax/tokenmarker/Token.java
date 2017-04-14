@@ -99,10 +99,15 @@ public class Token
 	 */
 	public static final byte INVALID = 10;
 
+   /**
+	 * Macro parameter token.  Added for MARS 4.3.
+	 */
+	public static final byte MACRO_ARG = 11;
+	
 	/**
 	 * The total number of defined token ids.
 	 */
-	public static final byte ID_COUNT = 11;
+	public static final byte ID_COUNT = 12;
 
 	/**
 	 * The first id that can be used for internal state

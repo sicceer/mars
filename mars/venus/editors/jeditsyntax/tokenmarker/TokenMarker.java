@@ -27,18 +27,15 @@
  *
  * @see org.syntax.jedit.Token
  */
-    public abstract class TokenMarker
-   {
+    public abstract class TokenMarker {
    /**
     * A wrapper for the lower-level <code>markTokensImpl</code> method
     * that is called to split a line up into tokens.
     * @param line The line
     * @param lineIndex The line number
     */
-       public Token markTokens(Segment line, int lineIndex)
-      {
-         if(lineIndex >= length)
-         {
+       public Token markTokens(Segment line, int lineIndex) {
+         if(lineIndex >= length) {
             throw new IllegalArgumentException("Tokenizing invalid line: "
                + lineIndex);
          }
@@ -59,42 +56,38 @@
          info.token = token;
       
       /*
-       * This is a foul hack. It stops nextLineRequested
-       * from being cleared if the same line is marked twice.
-       *
-       * Why is this necessary? It's all JEditTextArea's fault.
-       * When something is inserted into the text, firing a
-       * document event, the insertUpdate() method shifts the
-       * caret (if necessary) by the amount inserted.
-       *
-       * All caret movement is handled by the select() method,
-       * which eventually pipes the new position to scrollTo()
-       * and calls repaint().
-       *
-       * Note that at this point in time, the new line hasn't
-       * yet been painted; the caret is moved first.
-       *
-       * scrollTo() calls offsetToX(), which tokenizes the line
-       * unless it is being called on the last line painted
-       * (in which case it uses the text area's painter cached
-       * token list). What scrollTo() does next is irrelevant.
-       *
-       * After scrollTo() has done it's job, repaint() is
-       * called, and eventually we end up in paintLine(), whose
-       * job is to paint the changed line. It, too, calls
-       * markTokens().
-       *
-       * The problem was that if the line started a multiline
-       * token, the first markTokens() (done in offsetToX())
-       * would set nextLineRequested (because the line end
-       * token had changed) but the second would clear it
-       * (because the line was the same that time) and therefore
-       * paintLine() would never know that it needed to repaint
-       * subsequent lines.
-       *
-       * This bug took me ages to track down, that's why I wrote
-       * all the relevant info down so that others wouldn't
-       * duplicate it.
+       * This is a foul hack. It stops nextLineRequested from being cleared if
+       * the same line is marked twice.
+       * 
+       * Why is this necessary? It's all JEditTextArea's fault. When something
+       * is inserted into the text, firing a document event, the
+       * insertUpdate() method shifts the caret (if necessary) by the amount
+       * inserted.
+       * 
+       * All caret movement is handled by the select() method, which
+       * eventually pipes the new position to scrollTo() and calls repaint().
+       * 
+       * Note that at this point in time, the new line hasn't yet been
+       * painted; the caret is moved first.
+       * 
+       * scrollTo() calls offsetToX(), which tokenizes the line unless it is
+       * being called on the last line painted (in which case it uses the text
+       * area's painter cached token list). What scrollTo() does next is
+       * irrelevant.
+       * 
+       * After scrollTo() has done it's job, repaint() is called, and
+       * eventually we end up in paintLine(), whose job is to paint the
+       * changed line. It, too, calls markTokens().
+       * 
+       * The problem was that if the line started a multiline token, the first
+       * markTokens() (done in offsetToX()) would set nextLineRequested
+       * (because the line end token had changed) but the second would clear
+       * it (because the line was the same that time) and therefore
+       * paintLine() would never know that it needed to repaint subsequent
+       * lines.
+       * 
+       * This bug took me ages to track down, that's why I wrote all the
+       * relevant info down so that others wouldn't duplicate it.
        */
          if(!(lastLine == lineIndex && nextLineRequested))
             nextLineRequested = (oldToken != token);
@@ -119,8 +112,7 @@
     *
     * @param token The initial token type for this line
     * @param line The line to be tokenized
-    * @param lineIndex The index of the line in the document,
-    * starting at 0
+    * @param lineIndex The index of the line in the document, starting at 0
     * @return The initial token type for the next line
     */
        protected abstract byte markTokensImpl(byte token, Segment line,
@@ -135,8 +127,7 @@
     * The default implementation returns true; it should be overridden
     * to return false on simpler token markers for increased speed.
     */
-       public boolean supportsMultilineTokens()
-      {
+       public boolean supportsMultilineTokens() {
          return true;
       }
    
@@ -147,18 +138,15 @@
     * @param index The first line number
     * @param lines The number of lines 
     */
-       public void insertLines(int index, int lines)
-      {
+       public void insertLines(int index, int lines) {
          if(lines <= 0)
             return;
          length += lines;
          ensureCapacity(length);
          int len = index + lines;
-         System.arraycopy(lineInfo,index,lineInfo,len,
-            lineInfo.length - len);
+         System.arraycopy(lineInfo,index,lineInfo,len, lineInfo.length - len);
       
-         for(int i = index + lines - 1; i >= index; i--)
-         {
+         for(int i = index + lines - 1; i >= index; i--){
             lineInfo[i] = new LineInfo();
          }
       }
@@ -170,8 +158,7 @@
     * @param index The first line number
     * @param lines The number of lines
     */
-       public void deleteLines(int index, int lines)
-      {
+       public void deleteLines(int index, int lines) {
          if (lines <= 0)
             return;
          int len = index + lines;
@@ -183,8 +170,7 @@
    /**
     * Returns the number of lines in this token marker.
     */
-       public int getLineCount()
-      {
+       public int getLineCount() {
          return length;
       }
    
@@ -193,8 +179,7 @@
     * will return true after a line has been tokenized that starts
     * a multiline token that continues onto the next line.
     */
-       public boolean isNextLineRequested()
-      {
+       public boolean isNextLineRequested() {
          return nextLineRequested;
       }
    
@@ -206,25 +191,24 @@
     *  @param tokenText the source String that matched to the token
     *  @return ArrayList containing PopupHelpItem objects, one per match.  
     */
-       public ArrayList getTokenExactMatchHelp(Token token, String tokenText) 
-      {
+       public ArrayList getTokenExactMatchHelp(Token token, String tokenText) {
          return null;
       }
-
+   
    /**
     *  Construct and return any appropriate help information for
     *  the given token or "token prefix".  Will match instruction prefixes, e.g. "s" matches "sw".
-	 *  This default definition returns null;
+    *  This default definition returns null;
     *  override it in language-specific subclasses.
-	 *  @param line String containing current line
+    *  @param line String containing current line
     *  @param tokenList first Token on the current line
     *  @param token the pertinent Token object
     *  @param tokenText the source String that matched to the token
     *  @return ArrayList containing PopupHelpItem objects, one per match.  
     */		
-		public ArrayList getTokenPrefixMatchHelp(String line, Token tokenList, Token tokenAtOffset, String tokenText){
-		   return null;
-		}
+       public ArrayList getTokenPrefixMatchHelp(String line, Token tokenList, Token tokenAtOffset, String tokenText) {
+         return null;
+      }
    
    // protected members
    
@@ -268,8 +252,7 @@
     * a lineInfo array; an initial call to <code>insertLines()</code>
     * does that.
     */
-       protected TokenMarker()
-      {
+       protected TokenMarker() {
          lastLine = -1;
       }
    
@@ -284,12 +267,10 @@
     *
     * @param index The array index
     */
-       protected void ensureCapacity(int index)
-      {
+       protected void ensureCapacity(int index) {
          if(lineInfo == null)
             lineInfo = new LineInfo[index + 1];
-         else if(lineInfo.length <= index)
-         {
+         else if(lineInfo.length <= index) {
             LineInfo[] lineInfoN = new LineInfo[(index + 1) * 2];
             System.arraycopy(lineInfo,0,lineInfoN,0,
                 lineInfo.length);
@@ -302,32 +283,27 @@
     * @param length The length of the token
     * @param id The id of the token
     */
-       protected void addToken(int length, byte id)
-      {
+       protected void addToken(int length, byte id) {
          if(id >= Token.INTERNAL_FIRST && id <= Token.INTERNAL_LAST)
             throw new InternalError("Invalid id: " + id);
       
          if(length == 0 && id != Token.END)
             return;
       
-         if(firstToken == null)
-         {
+         if(firstToken == null) {
             firstToken = new Token(length,id);
             lastToken = firstToken;
          }
-         else if(lastToken == null)
-         {
+         else if(lastToken == null) {
             lastToken = firstToken;
             firstToken.length = length;
             firstToken.id = id;
          }
-         else if(lastToken.next == null)
-         {
+         else if(lastToken.next == null) {
             lastToken.next = new Token(length,id);
             lastToken = lastToken.next;
          }
-         else
-         {
+         else {
             lastToken = lastToken.next;
             lastToken.length = length;
             lastToken.id = id;
@@ -337,22 +313,19 @@
    /**
     * Inner class for storing information about tokenized lines.
     */
-       public class LineInfo
-      {
+       public class LineInfo {
       /**
        * Creates a new LineInfo object with token = Token.NULL
        * and obj = null.
        */
-          public LineInfo()
-         {
+          public LineInfo() {
          }
       
       /**
        * Creates a new LineInfo object with the specified
        * parameters.
        */
-          public LineInfo(byte token, Object obj)
-         {
+          public LineInfo(byte token, Object obj) {
             this.token = token;
             this.obj = obj;
          }

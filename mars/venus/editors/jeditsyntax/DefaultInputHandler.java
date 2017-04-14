@@ -232,9 +232,19 @@
          // matches KeyEvent.META_MASK.   DPS 30-Nov-2010
          if ((modifiers & KeyEvent.META_MASK) != 0) 
             return;
-      
-         if(c != KeyEvent.CHAR_UNDEFINED &&
-         (modifiers & KeyEvent.ALT_MASK) == 0)
+      // DPS 9-Jan-2013.  Umberto Villano from Italy describes Alt combinations
+      // not working on Italian Mac keyboards, where # requires Alt (Option).
+		// This is preventing him from writing comments.  Similar complaint from
+		// Joachim Parrow in Sweden, only for the $ character.  Villano pointed
+		// me to this method.  Plus a Google search on "jeditsyntax alt key"
+		// (without quotes) took me to
+		// http://compgroups.net/comp.lang.java.programmer/option-key-in-jedit-syntax-package/1068227
+		// which says to comment out the second condition in this IF statement:
+      // if(c != KeyEvent.CHAR_UNDEFINED && (modifiers & KeyEvent.ALT_MASK) == 0)
+		// So let's give it a try!
+		// (...later) Bummer, it results in keystroke echoed into editing area when I use Alt
+		// combination for shortcut menu access (e.g. Alt+f to open the File menu).
+         if(c != KeyEvent.CHAR_UNDEFINED && (modifiers & KeyEvent.ALT_MASK) == 0)
          {
             if(c >= 0x20 && c != 0x7f)
             { 

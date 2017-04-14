@@ -11,7 +11,7 @@
    import javax.swing.JOptionPane;   // KENV 9/8/2004
 
 /*
-Copyright (c) 2003-2011,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -45,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version December 2009
  **/
 
-    public class MarsLaunch {
+   public class MarsLaunch {
    
    /**
     * Main takes a number of command line arguments.<br>
@@ -67,11 +67,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   are <tt>Binary</tt>, <tt>HexText</tt>, <tt>BinaryText</tt>.<br>
             h  -- display help.  Use by itself and with no filename</br>
           hex  -- display memory or register contents in hexadecimal (default)<br>
+           ic  -- display count of MIPS basic instructions 'executed'");
            mc  -- set memory configuration.  Option has 1 argument, e.g.<br>
                   <tt>mc &lt;config$gt;</tt>, where &lt;config$gt; is <tt>Default</tt><br>
                   for the MARS default 32-bit address space, <tt>CompactDataAtZero</tt> for<br>
                   a 32KB address space with data segment at address 0, or <tt>CompactTextAtZero</tt><br>
                   for a 32KB address space with text segment at address 0.<br>
+           me  -- display MARS messages to standard err instead of standard out. Can separate via redirection.</br>
            nc  -- do not display copyright notice (for cleaner redirected/piped output).</br>
    		  np  -- No Pseudo-instructions allowed ("ne" will work also).<br>
    		   p  -- Project mode - assemble all files in the same directory as given file.<br>
@@ -103,6 +105,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private boolean delayedBranching;  // MIPS delayed branching is enabled.
       private boolean warningsAreErrors; // Whether assembler warnings should be considered errors.
       private boolean startAtMain; // Whether to start execution at statement labeled 'main' 
+      private boolean countInstructions; // Whether to count and report number of instructions executed 
       private static final String rangeSeparator = "-";
       private static final int splashDuration = 2000; // time in MS to show splash screen
       private static final int memoryWordsPerLine = 4; // display 4 memory words, tab separated, per line
@@ -114,13 +117,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private ArrayList filenameList;
       private MIPSprogram code;
       private int maxSteps;
+      private int instructionCount;
       private PrintStream out; // stream for display of command line output
       private ArrayList dumpTriples = null; // each element holds 3 arguments for dump option
       private ArrayList programArgumentList; // optional program args for MIPS program (becomes argc, argv)
       private int assembleErrorExitCode;  // MARS command exit code to return if assemble error occurs
       private int simulateErrorExitCode;// MARS command exit code to return if simulation error occurs
    		
-       public MarsLaunch(String[] args) {
+      public MarsLaunch(String[] args) {
          boolean gui = (args.length == 0);
          Globals.initialize(gui);  
          if (gui) {
@@ -137,6 +141,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             delayedBranching = false;
             warningsAreErrors = false;
             startAtMain = false;
+            countInstructions = false;
+            instructionCount = 0;
             assembleErrorExitCode = 0;
             simulateErrorExitCode = 0;
             registerDisplayList = new ArrayList();
@@ -146,9 +152,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          	// do NOT use Globals.program for command line MARS -- it triggers 'backstep' log.
             code = new MIPSprogram();  
             maxSteps = -1;
-            out = System.out;
+            out = System.out;  
             if (parseCommandArgs(args)) {
                if (runCommand()) {
+                  displayMiscellaneousPostMortem();
                   displayRegistersPostMortem();
                   displayMemoryPostMortem();
                }
@@ -162,7 +169,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// Perform any specified dump operations.  See "dump" option.
    	//
    
-       private void dumpSegments() {
+      private void dumpSegments() {
        
          if (dumpTriples == null) 
             return;
@@ -179,10 +186,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   segInfo[0] = new Integer(Binary.stringToInt(memoryRange[0])); // low end of range
                   segInfo[1] = new Integer(Binary.stringToInt(memoryRange[1])); // high end of range
                }    
-                   catch (NumberFormatException nfe) {
+                  catch (NumberFormatException nfe) {
                      segInfo = null;
                   }
-                   catch (NullPointerException npe) {
+                  catch (NullPointerException npe) {
                      segInfo = null;
                   }
             }
@@ -205,15 +212,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                } 
                format.dumpMemoryRange(file, segInfo[0].intValue(), highAddress); 
             } 
-                catch (FileNotFoundException e) {
+               catch (FileNotFoundException e) {
                   out.println("Error while attempting to save dump, file " + file + " was not found!");
                   continue;
                } 
-                catch (AddressErrorException e) {
+               catch (AddressErrorException e) {
                   out.println("Error while attempting to save dump, file " + file + "!  Could not access address: " + e.getAddress() + "!");
                   continue;
                } 
-                catch (IOException e) {
+               catch (IOException e) {
                   out.println("Error while attempting to save dump, file " + file + "!  Disk IO failed!");
                   continue;
                }
@@ -225,12 +232,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// There are no command arguments, so run in interactive mode by
    	// launching the GUI-fronted integrated development environment.
    	
-       private void launchIDE() {
+      private void launchIDE() {
          // System.setProperty("apple.laf.useScreenMenuBar", "true"); // Puts MARS menu on Mac OS menu bar
          new MarsSplashScreen(splashDuration).showSplash();
          SwingUtilities.invokeLater(
-                new Runnable() {
-                   public void run() {
+               new Runnable() {
+                  public void run() {
                      //Turn off metal's use of bold fonts
                      //UIManager.put("swing.boldMetal", Boolean.FALSE);
                      new VenusUI("MARS "+Globals.version);
@@ -247,13 +254,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// and build data structures.  For help option (h), display the help.
    	// Returns true if command args parse OK, false otherwise.
       			
-       private boolean parseCommandArgs(String[] args) {
+      private boolean parseCommandArgs(String[] args) {
          String noCopyrightSwitch = "nc";
+         String displayMessagesToErrSwitch = "me";
          boolean argsOK = true;
          boolean inProgramArgumentList = false;
          programArgumentList = null;
          if (args.length == 0) 
             return true; // should not get here...
+         // If the option to display MARS messages to standard erro is used,
+      	// it must be processed before any others (since messages may be
+      	// generated during option parsing).
+         processDisplayMessagesToErrSwitch(args, displayMessagesToErrSwitch);
          displayCopyright(args, noCopyrightSwitch);  // ..or not..
          if (args.length == 1 && args[0].equals("h")) {
             displayHelp();
@@ -275,10 +287,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                inProgramArgumentList = true;
                continue;
             }
+         	// messages-to-standard-error switch already processed, so ignore.
+            if (args[i].toLowerCase().equals(displayMessagesToErrSwitch)) {
+               continue;
+            }
          	// no-copyright switch already processed, so ignore.
             if (args[i].toLowerCase().equals(noCopyrightSwitch)) {
                continue;
-            }
+            }				
             if (args[i].toLowerCase().equals("dump")) {
                if (args.length <= (i+3)) {
                   out.println("Dump command line argument requires a segment, format and file name.");
@@ -311,7 +327,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   assembleErrorExitCode = Integer.decode(s).intValue();
                   continue;
                }             
-                   catch (NumberFormatException nfe) {
+                  catch (NumberFormatException nfe) {
                    // Let it fall thru and get handled by catch-all
                   }
             }
@@ -322,7 +338,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   simulateErrorExitCode = Integer.decode(s).intValue();
                   continue;
                }              
-                   catch (NumberFormatException nfe) {
+                  catch (NumberFormatException nfe) {
                    // Let it fall thru and get handled by catch-all
                   }
             }
@@ -376,6 +392,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                startAtMain = true;
                continue;
             }
+            if (args[i].toLowerCase().equals("ic")) { // added 19-Jul-2012 DPS
+               countInstructions = true;
+               continue;
+            }
+         
          
             if (args[i].indexOf("$") == 0) {
                if (RegisterFile.getUserRegister(args[i])==null &&
@@ -403,7 +424,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                maxSteps = Integer.decode(args[i]).intValue(); // if we got here, it has to be OK 
                continue;              
             } 
-                catch (NumberFormatException nfe) {
+               catch (NumberFormatException nfe) {
                }
             // Check for integer address range (m-n)
             try {
@@ -412,12 +433,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                memoryDisplayList.add(memoryRange[1]); // high end of range
                continue;
             }    
-                catch (NumberFormatException nfe) {
+               catch (NumberFormatException nfe) {
                   out.println("Invalid/unaligned address or invalid range: "+args[i]);
                   argsOK = false;
                   continue;
                }
-                catch (NullPointerException npe) {
+               catch (NullPointerException npe) {
                	   // Do nothing.  next statement will handle it
                }
             out.println("Invalid Command Argument: "+args[i]);
@@ -431,7 +452,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// Carry out the mars command: assemble then optionally run     
    	// Returns false if no simulation (run) occurs, true otherwise. 	
       	
-       private boolean runCommand() {
+      private boolean runCommand() {
          boolean programRan = false;
          if (filenameList.size()==0) {
             return programRan;
@@ -480,7 +501,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             if (simulate) {
                // store program args (if any) in MIPS memory
                new ProgramArgumentList(programArgumentList).storeProgramArguments();
-            
+            	// establish observer if specified  
+               establishObserver();
                if (Globals.debug) {
                   out.println("--------  SIMULATION BEGINS  -----------");
                }
@@ -494,7 +516,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                out.println("\n--------  ALL PROCESSING COMPLETE  -----------");
             }
          }
-             catch (ProcessingException e) {
+            catch (ProcessingException e) {
                Globals.exitCode = (programRan) ? simulateErrorExitCode : assembleErrorExitCode;
                out.println(e.errors().generateErrorAndWarningReport());
                out.println("Processing terminated due to errors.");
@@ -508,7 +530,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       // by "-"; no embedded spaces.  e.g. 0x00400000-0x00400010
       // If number is not multiple of 4, will be rounded up to next higher. 
    	
-       private String[] checkMemoryAddressRange(String arg) throws NumberFormatException {
+      private String[] checkMemoryAddressRange(String arg) throws NumberFormatException {
          String[] memoryRange = null;
          if (arg.indexOf(rangeSeparator) > 0 && 
                    arg.indexOf(rangeSeparator) < arg.length()-1) {
@@ -527,14 +549,54 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
          return memoryRange;
       }
-      
-   	
+   
+      /////////////////////////////////////////////////////////////////
+   	// Required for counting instructions executed, if that option is specified.
+   	// DPS 19 July 2012
+      private void establishObserver() { 
+         if (countInstructions) {
+            Observer instructionCounter = 
+               new Observer() {
+                  private int lastAddress = 0;
+                  public void update(Observable o, Object obj) { 
+                     if (obj instanceof AccessNotice) {
+                        AccessNotice notice = (AccessNotice) obj;
+                        if (!notice.accessIsFromMIPS()) 
+                           return;
+                        if (notice.getAccessType() != AccessNotice.READ) 
+                           return;
+                        MemoryAccessNotice m = (MemoryAccessNotice) notice;
+                        int a = m.getAddress();
+                        if (a == lastAddress) 
+                           return;
+                        lastAddress = a;
+                        instructionCount++;				  
+                     }
+                  }
+               };
+            try {
+               Globals.memory.addObserver(instructionCounter, Memory.textBaseAddress, Memory.textLimitAddress);
+            } 
+               catch (AddressErrorException aee) {
+                  out.println("Internal error: MarsLaunch uses incorrect text segment address for instruction observer");
+               }
+         }		
+      }
+   	     		   	
+   	//////////////////////////////////////////////////////////////////////
+   	// Displays any specified runtime properties. Initially just instruction count 
+   	// DPS 19 July 2012  	
+      private void displayMiscellaneousPostMortem() {
+         if (countInstructions) {
+            out.println("\n"+instructionCount);
+         }
+      }
    
    	     		   	
    	//////////////////////////////////////////////////////////////////////
    	// Displays requested register or registers   			
    				
-       private void displayRegistersPostMortem() {
+      private void displayRegistersPostMortem() {
          int value;  // handy local to use throughout the next couple loops
          String strValue;
          // Display requested register contents
@@ -561,7 +623,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   lvalue = Coprocessor1.getLongFromRegisterPair(reg);
                   hasDouble = true;
                } 
-                   catch (InvalidRegisterAccessException irae) { }
+                  catch (InvalidRegisterAccessException irae) { }
                if (verbose) {
                   out.print(reg+"\t");
                }
@@ -606,7 +668,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
    	//////////////////////////////////////////////////////////////////////
    	// Formats int value for display: decimal, hex, ascii    
-       private String formatIntForDisplay(int value) {
+      private String formatIntForDisplay(int value) {
          String strValue; 
          switch (displayFormat) {
             case DECIMAL : 
@@ -627,7 +689,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	//////////////////////////////////////////////////////////////////////
    	// Displays requested memory range or ranges
    	
-       private void displayMemoryPostMortem() {  
+      private void displayMemoryPostMortem() {  
          int value;  
          // Display requested memory range contents
          Iterator memIter = memoryDisplayList.iterator();
@@ -637,7 +699,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                addressStart = Binary.stringToInt(memIter.next().toString());
                addressEnd = Binary.stringToInt(memIter.next().toString());
             } 
-                catch (NumberFormatException nfe) {
+               catch (NumberFormatException nfe) {
                }
             int valuesDisplayed = 0;
             for (int addr=addressStart; addr<=addressEnd; addr+=Memory.WORD_LENGTH_BYTES) {
@@ -660,7 +722,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   }
                   out.print( formatIntForDisplay(value)+"\t");
                }
-                   catch (AddressErrorException aee) {
+                  catch (AddressErrorException aee) {
                      out.print("Invalid address: "+addr+"\t");
                   }
                valuesDisplayed++;
@@ -670,10 +732,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
    
       ///////////////////////////////////////////////////////////////////////
+   	//  If option to display MARS messages to standard err (System.err) is
+   	//  present, it must be processed before all others.  Since messages may
+   	//  be output as early as during the command parse.  
+      private void processDisplayMessagesToErrSwitch(String[] args, String displayMessagesToErrSwitch) {
+         for (int i=0; i<args.length; i++) {
+            if (args[i].toLowerCase().equals(displayMessagesToErrSwitch)) {
+               out = System.err;
+               return;
+            }
+         }
+      }  
+      ///////////////////////////////////////////////////////////////////////
    	//  Decide whether copyright should be displayed, and display
    	//  if so.
    	
-       private void displayCopyright(String[] args, String noCopyrightSwitch) {
+      private void displayCopyright(String[] args, String noCopyrightSwitch) {
          boolean print = true;
          for (int i=0; i<args.length; i++) {
             if (args[i].toLowerCase().equals(noCopyrightSwitch)) {
@@ -687,7 +761,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	///////////////////////////////////////////////////////////////////////
    	//  Display command line help text
    	
-       private void displayHelp() {
+      private void displayHelp() {
          String[] segmentNames = MemoryDump.getSegmentNames();
          String segments = "";
          for (int i=0; i<segmentNames.length; i++) {
@@ -721,11 +795,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          out.println("            <format> = "+formats);
          out.println("      h  -- display this help.  Use by itself with no filename.");
          out.println("    hex  -- display memory or register contents in hexadecimal (default)");
+         out.println("     ic  -- display count of MIPS basic instructions 'executed'");
          out.println("     mc <config>  -- set memory configuration.  Argument <config> is");
          out.println("            case-sensitive and possible values are: Default for the default");
          out.println("            32-bit address space, CompactDataAtZero for a 32KB memory with");
          out.println("            data segment at address 0, or CompactTextAtZero for a 32KB");
          out.println("            memory with text segment at address 0.");
+         out.println("     me  -- display MARS messages to standard err instead of standard out. ");
+         out.println("            Can separate messages from program output using redirection");
          out.println("     nc  -- do not display copyright notice (for cleaner redirected/piped output).");
          out.println("     np  -- use of pseudo instructions and formats not permitted");
          out.println("      p  -- Project mode - assemble all files in the same directory as given file.");

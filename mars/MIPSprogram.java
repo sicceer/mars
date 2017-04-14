@@ -1,8 +1,10 @@
    package mars;
+	
    import mars.venus.*;
    import mars.assembler.*;
    import mars.simulator.*;
    import mars.mips.hardware.*;
+	
    import java.util.*;
    import java.io.*;
    import java.awt.event.*;
@@ -57,6 +59,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private ArrayList machineList;
       private BackStepper backStepper;
       private SymbolTable localSymbolTable;
+      private MacroPool macroPool;
+      private ArrayList<SourceLine> sourceLineList;
+		private Tokenizer tokenizer;
    
    /**
     * Produces list of source statements that comprise the program.
@@ -65,6 +70,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     
        public ArrayList getSourceList() {
          return sourceList;
+      }
+   
+   /**
+    * Set list of source statements that comprise the program.
+    * @param sourceLineList ArrayList of SourceLine.  
+	 * Each SourceLine represents one line of MIPS source code.
+    **/
+   	
+       public void setSourceLineList(ArrayList<SourceLine> sourceLineList) { 
+         this.sourceLineList = sourceLineList; 
+         sourceList = new ArrayList();
+         for (SourceLine sl : sourceLineList) {
+            sourceList.add(sl.getSource());
+         } 
+      }
+   
+   /**
+    * Retrieve list of source statements that comprise the program.
+    * @return ArrayList of SourceLine.  
+	 * Each SourceLine represents one line of MIPS source cod
+    **/
+   	
+       public ArrayList<SourceLine> getSourceLineList() {
+         return this.sourceLineList;
       }
    
    /**
@@ -87,6 +116,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          return tokenList;
       }
    
+   /**
+    * Retrieves Tokenizer for this program
+    * @return Tokenizer
+    **/   
+    
+       public Tokenizer getTokenizer() {
+         return tokenizer;
+      }	
+		
    /**
     * Produces new empty list to hold parsed source code statements.
     * @return ArrayList of ProgramStatement.  Each ProgramStatement represents a parsed
@@ -190,7 +228,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          } 
              catch (Exception e) {
                errors = new ErrorList();
-               errors.add(new ErrorMessage(file,0,0,e.toString()));
+               errors.add(new ErrorMessage((MIPSprogram)null,0,0,e.toString()));
                throw new ProcessingException(errors);
             }
          return;
@@ -202,7 +240,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     **/
    
        public void tokenize() throws ProcessingException {
-         Tokenizer tokenizer = new Tokenizer();
+         this.tokenizer = new Tokenizer();
          this.tokenList = tokenizer.tokenize(this);
          this.localSymbolTable = new SymbolTable(this.filename); // prepare for assembly
          return;
@@ -214,10 +252,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param filenames  ArrayList containing the source file name(s) in no particular order
     * @param leadFilename String containing name of source file that needs to go first and 
     * will be represented by "this" MIPSprogram object.
-	 * @param exceptionHandler String containing name of source file containing exception
-	 * handler.  This will be assembled first, even ahead of leadFilename, to allow it to
-	 * include "startup" instructions loaded beginning at 0x00400000.  Specify null or
-	 * empty String to indicate there is no such designated exception handler.
+    * @param exceptionHandler String containing name of source file containing exception
+    * handler.  This will be assembled first, even ahead of leadFilename, to allow it to
+    * include "startup" instructions loaded beginning at 0x00400000.  Specify null or
+    * empty String to indicate there is no such designated exception handler.
     * @return ArrayList containing one MIPSprogram object for each file to assemble.
     * objects for any additional files (send ArrayList to assembler)
     * @throws ProcessingException Will throw exception if errors occured while reading or tokenizing.
@@ -225,11 +263,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
        public ArrayList prepareFilesForAssembly(ArrayList filenames, String leadFilename, String exceptionHandler) throws ProcessingException {
          ArrayList MIPSprogramsToAssemble = new ArrayList();
-			int leadFilePosition = 0;
-			if (exceptionHandler != null && exceptionHandler.length() > 0) {
-			   filenames.add(0, exceptionHandler);
-				leadFilePosition = 1;
-			}
+         int leadFilePosition = 0;
+         if (exceptionHandler != null && exceptionHandler.length() > 0) {
+            filenames.add(0, exceptionHandler);
+            leadFilePosition = 1;
+         }
          for (int i=0; i<filenames.size(); i++) {
             String filename = (String) filenames.get(i);  
             MIPSprogram preparee = (filename.equals(leadFilename)) ? this : new MIPSprogram();
@@ -245,36 +283,36 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
          return MIPSprogramsToAssemble;
       }
-
+   
    /**
     * Assembles the MIPS source program. All files comprising the program must have 
     * already been tokenized.  Assembler warnings are not considered errors.
     * @param MIPSprogramsToAssemble ArrayList of MIPSprogram objects, each representing a tokenized source file.
-	 * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
-	 * are permitted in source code and false means they are to be flagged as errors.
+    * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
+    * are permitted in source code and false means they are to be flagged as errors.
     * @throws ProcessingException Will throw exception if errors occured while assembling.
     * @return ErrorList containing nothing or only warnings (otherwise would have thrown exception).
     **/
-
+   
        public ErrorList assemble(ArrayList MIPSprogramsToAssemble, boolean extendedAssemblerEnabled)
-		        throws ProcessingException {   
-			 return assemble(MIPSprogramsToAssemble, extendedAssemblerEnabled, false);
-		 }
-		  
+              throws ProcessingException {   
+         return assemble(MIPSprogramsToAssemble, extendedAssemblerEnabled, false);
+      }
+   	  
    /**
     * Assembles the MIPS source program. All files comprising the program must have 
     * already been tokenized.
     * @param MIPSprogramsToAssemble ArrayList of MIPSprogram objects, each representing a tokenized source file.
-	 * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
-	 * are permitted in source code and false means they are to be flagged as errors
-	 * @param warningsAreErrors A boolean value - true means assembler warnings will be considered errors and terminate
-	   the assemble; false means the assembler will produce warning message but otherwise ignore warnings.
+    * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
+    * are permitted in source code and false means they are to be flagged as errors
+    * @param warningsAreErrors A boolean value - true means assembler warnings will be considered errors and terminate
+      the assemble; false means the assembler will produce warning message but otherwise ignore warnings.
     * @throws ProcessingException Will throw exception if errors occured while assembling.
     * @return ErrorList containing nothing or only warnings (otherwise would have thrown exception).
     **/
     
        public ErrorList assemble(ArrayList MIPSprogramsToAssemble, boolean extendedAssemblerEnabled,
-		        boolean warningsAreErrors) throws ProcessingException {
+              boolean warningsAreErrors) throws ProcessingException {
          this.backStepper = null;
          Assembler asm = new Assembler();
          this.machineList = asm.assemble(MIPSprogramsToAssemble, extendedAssemblerEnabled, warningsAreErrors);
@@ -350,4 +388,35 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public boolean inSteppedExecution() {
          return steppedExecution;
       }
+   
+   /**
+    * Instantiates a new {@link MacroPool} and sends reference of this
+    * {@link MIPSprogram} to it
+    * 
+    * @return instatiated MacroPool
+    * @author M.H.Sekhavat <sekhavat17@gmail.com>
+    */
+       public MacroPool createMacroPool() {
+         macroPool = new MacroPool(this);
+         return macroPool;
+      }
+   
+   /**
+    * Gets local macro pool {@link MacroPool} for this program
+    * @return MacroPool
+    * @author M.H.Sekhavat <sekhavat17@gmail.com>
+    */	
+       public MacroPool getLocalMacroPool() {
+         return macroPool;
+      }
+   
+   /**
+    * Sets local macro pool {@link MacroPool} for this program
+    * @param macroPool reference to MacroPool
+    * @author M.H.Sekhavat <sekhavat17@gmail.com>
+    */   
+       public void setLocalMacroPool(MacroPool macroPool) {
+         this.macroPool = macroPool;
+      }
+    
    }  // MIPSprogram

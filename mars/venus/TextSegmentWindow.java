@@ -1,4 +1,5 @@
    package mars.venus;
+	
    import mars.*;
    import mars.mips.hardware.*;
    import mars.mips.instructions.*;
@@ -106,32 +107,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          intAddresses = new int[data.length];
          addressRows = new Hashtable(data.length);
       	// Get highest source line number to determine #leading spaces so line numbers will vertically align
-			// In multi-file situation, this will not necessarily be the last line b/c sourceStatementList contains
-			// source lines from all files.  DPS 3-Oct-10
-			int maxSourceLineNumber = 0;
+      	// In multi-file situation, this will not necessarily be the last line b/c sourceStatementList contains
+      	// source lines from all files.  DPS 3-Oct-10
+         int maxSourceLineNumber = 0;
          for (int i=sourceStatementList.size()-1; i>=0; i--) {
             ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i);
-				if (statement.getSourceLine() > maxSourceLineNumber) {
-				   maxSourceLineNumber = statement.getSourceLine();
-				}
+            if (statement.getSourceLine() > maxSourceLineNumber) {
+               maxSourceLineNumber = statement.getSourceLine();
+            }
          }
          int sourceLineDigits = (""+maxSourceLineNumber).length();
          int leadingSpaces = 0;
-         for(int i=0; i < sourceStatementList.size(); i++){
-            ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i); 
+         int lastLine = -1;
+         for (int i = 0; i < sourceStatementList.size(); i++) {
+            ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i);
             intAddresses[i] = statement.getAddress();
-            addressRows.put(new Integer(intAddresses[i]),new Integer(i)); 
-            data[i][BREAK_COLUMN]   = Boolean.FALSE;
-            data[i][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(statement.getAddress(), addressBase); 
-            data[i][CODE_COLUMN]    = NumberDisplayBaseChooser.formatNumber(statement.getBinaryStatement(),16);
-            data[i][BASIC_COLUMN]   = statement.getPrintableBasicAssemblyStatement();
+            addressRows.put(new Integer(intAddresses[i]), new Integer(i));
+            data[i][BREAK_COLUMN] = Boolean.FALSE;
+            data[i][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(statement.getAddress(), addressBase);
+            data[i][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryStatement(), 16);
+            data[i][BASIC_COLUMN] = statement.getPrintableBasicAssemblyStatement();
             String sourceString = "";
             if (!statement.getSource().equals("")) {
-               leadingSpaces = sourceLineDigits - (""+statement.getSourceLine()).length();
-               sourceString = "          ".substring(0, leadingSpaces) + statement.getSourceLine() + ": " + 
-                             mars.util.EditorFont.substituteSpacesForTabs(statement.getSource());				  
+               leadingSpaces = sourceLineDigits - ("" + statement.getSourceLine()).length();
+               String lineNumber = "          ".substring(0, leadingSpaces)
+                  + statement.getSourceLine()+ ": ";
+               if (statement.getSourceLine()==lastLine)
+                  lineNumber="          ".substring(0, sourceLineDigits)+"  ";
+               sourceString = lineNumber 
+                  + mars.util.EditorFont.substituteSpacesForTabs(statement.getSource());		
             }
             data[i][SOURCE_COLUMN] = sourceString;
+            lastLine=statement.getSourceLine();
          }
          contentPane.removeAll();
          tableModel = new TextTableModel(data);
@@ -238,7 +245,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             table.getModel().setValueAt(formattedAddress, i, ADDRESS_COLUMN);
          }
       }
-
+   
     	/**
    	 *  Redisplay the basic statements.  This should only be done when address or value display base is
    	 *  modified (e.g. between base 16 hex and base 10 dec).
@@ -246,13 +253,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
        public void updateBasicStatements() {
          if (contentPane.getComponentCount() == 0) 
             return; // ignore if no content to change
-			ArrayList sourceStatementList = Globals.program.getMachineList();
+         ArrayList sourceStatementList = Globals.program.getMachineList();
          for(int i=0; i < sourceStatementList.size(); i++){
             ProgramStatement statement = (ProgramStatement) sourceStatementList.get(i); 
             table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);
          }
       }
-
+   
    	
    	/**
    	 *  Return code address as an int, for the specified row of the table.  This should only

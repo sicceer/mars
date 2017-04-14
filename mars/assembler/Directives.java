@@ -1,8 +1,9 @@
    package mars.assembler;
+
    import java.util.ArrayList;
 
 /*
-Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -58,6 +59,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final Directives KTEXT  = new Directives(".ktext", "Subsequent items (instructions) stored in Kernel Text segment at next available address");
       public static final Directives GLOBL  = new Directives(".globl", "Declare the listed label(s) as global to enable referencing from other files");
       public static final Directives SET    = new Directives(".set", "Set assembler variables.  Currently ignored but included for SPIM compatability");
+      /*  EQV added by DPS 11 July 2012 */
+      public static final Directives EQV    = new Directives(".eqv", "Substitute second operand for first. First operand is symbol, second operand is expression (like #define)");
+      /* MACRO and END_MACRO added by Mohammad Sekhavat Oct 2012 */    
+      public static final Directives MACRO  = new Directives(".macro", "Begin macro definition.  See .end_macro");
+      public static final Directives END_MACRO = new Directives(".end_macro", "End macro definition.  See .macro");
+      /*  INCLUDE added by DPS 11 Jan 2013 */
+      public static final Directives INCLUDE   = new Directives(".include", "Insert the contents of the specified file.  Put filename in quotes.");
    
    
       private String descriptor;

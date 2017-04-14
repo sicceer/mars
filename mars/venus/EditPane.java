@@ -48,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	  *   @author Sanderson and Bumgarner
 	  */
 
-    public class EditPane extends JPanel implements Observer {
+   public class EditPane extends JPanel implements Observer {
    
       private MARSTextEditingArea sourceCode;
       private VenusUI mainUI;
@@ -65,7 +65,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       *  Constructor for the EditPane class. 
    	*/
    	
-       public EditPane(VenusUI appFrame){
+      public EditPane(VenusUI appFrame){
          super(new BorderLayout());
          this.mainUI = appFrame;
       	// user.dir, user's current working directory, is guaranteed to have a value
@@ -87,8 +87,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       	
       	// If source code is modified, will set flag to trigger/request file save.
          sourceCode.getDocument().addDocumentListener(
-                new DocumentListener() {
-                   public void insertUpdate(DocumentEvent evt) {
+               new DocumentListener() {
+                  public void insertUpdate(DocumentEvent evt) {
                      // IF statement added DPS 9-Aug-2011
                   	// This method is triggered when file contents added to document
                   	// upon opening, even though not edited by user.  The IF
@@ -132,10 +132,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
                      }
                   }
-                   public void removeUpdate(DocumentEvent evt) {
+                  public void removeUpdate(DocumentEvent evt) {
                      this.insertUpdate(evt);
                   }
-                   public void changedUpdate(DocumentEvent evt) {
+                  public void changedUpdate(DocumentEvent evt) {
                      this.insertUpdate(evt);
                   }
                });
@@ -155,8 +155,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       	
       	// Listener fires when "Show Line Numbers" check box is clicked.
          showLineNumbers.addItemListener(
-                new ItemListener() {
-                   public void itemStateChanged(ItemEvent e) {
+               new ItemListener() {
+                  public void itemStateChanged(ItemEvent e) {
                      if (showLineNumbers.isSelected()) {
                         lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
                         lineNumbers.setVisible(true);
@@ -189,7 +189,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	  *   @param editable set true if code is editable else false
    	  */
    	
-       public void setSourceCode(String s, boolean editable){
+      public void setSourceCode(String s, boolean editable){
          sourceCode.setSourceCode(s, editable);
       }
       
@@ -201,7 +201,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  to appear with its Undo action enabled.  But it will unless you
    	 *  call this after setting the text.
    	 */ 
-       public void discardAllUndoableEdits() {
+      public void discardAllUndoableEdits() {
          sourceCode.discardAllUndoableEdits();
       }
    
@@ -211,7 +211,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 * one line number per line.
    	 */
       private static final String spaces = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-       public String getLineNumbersList(javax.swing.text.Document doc) {
+      public String getLineNumbersList(javax.swing.text.Document doc) {
          StringBuffer lineNumberList = new StringBuffer("<html>");
          int lineCount = doc.getDefaultRootElement().getElementCount(); //this.getSourceLineCount();
          int digits = Integer.toString(lineCount).length();
@@ -240,7 +240,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 * on empty lines (consecutive delimiters) even when returning delimiter as token.
    	 * BufferedReader on StringReader seems to work better.
    	 */
-       public int getSourceLineCount() {
+      public int getSourceLineCount() {
          BufferedReader bufStringReader = new BufferedReader(new StringReader(sourceCode.getText()));
          int lineNums = 0;
          try {
@@ -248,7 +248,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                lineNums++;
             }
          }
-             catch (IOException e) {
+            catch (IOException e) {
             }
          return lineNums;
       }
@@ -258,7 +258,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *
    	 * @return Sting containing source code
    	 */
-       public String getSource(){
+      public String getSource(){
          return sourceCode.getText();
       }
    	
@@ -269,7 +269,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  
    	 * @param FileStatus the status constant from class FileStatus
    	 */   
-       public void setFileStatus(int fileStatus) {
+      public void setFileStatus(int fileStatus) {
          this.fileStatus.setFileStatus(fileStatus);
       }
    
@@ -279,14 +279,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  This will be one of the constants from class FileStatus.
    	 */    
    
-       public int getFileStatus() {
+      public int getFileStatus() {
          return this.fileStatus.getFileStatus();
       }
       
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */   
-       public String getFilename() {
+      public String getFilename() {
          return this.fileStatus.getFilename();
       }
    	
@@ -294,7 +294,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */   
-       public String getPathname() {
+      public String getPathname() {
          return this.fileStatus.getPathname();
       }
    	
@@ -302,14 +302,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */   
-       public void setPathname(String pathname) {
+      public void setPathname(String pathname) {
          this.fileStatus.setPathname(pathname);
       }
       
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */
-       public boolean hasUnsavedEdits() {
+      public boolean hasUnsavedEdits() {
          return this.fileStatus.hasUnsavedEdits();
       }
    
@@ -317,7 +317,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */   	
-       public boolean isNew() {
+      public boolean isNew() {
          return this.fileStatus.isNew();
       }
    
@@ -326,7 +326,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 * Delegates to text area's requestFocusInWindow method.
    	 */
          	
-       public void tellEditingComponentToRequestFocusInWindow() {
+      public void tellEditingComponentToRequestFocusInWindow() {
          this.sourceCode.requestFocusInWindow();
       }
    		
@@ -334,7 +334,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * Delegates to corresponding FileStatus method
    	 */   		
-       public void updateStaticFileStatus() {
+      public void updateStaticFileStatus() {
          fileStatus.updateStaticFileStatus();
       }
    	
@@ -343,7 +343,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  get the manager in charge of Undo and Redo operations
    	 *  @return the UnDo manager
    	 */
-       public UndoManager getUndoManager() {
+      public UndoManager getUndoManager() {
          return sourceCode.getUndoManager();
       }
    	
@@ -359,7 +359,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * copy currently-selected text into clipboard
    	 */
-       public void copyText() {
+      public void copyText() {
          sourceCode.copy();
          sourceCode.setCaretVisible(true);
          sourceCode.setSelectionVisible(true);
@@ -368,21 +368,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	/**
    	 * cut currently-selected text into clipboard
    	 */
-       public void cutText() {
+      public void cutText() {
          sourceCode.cut();		 
          sourceCode.setCaretVisible(true);
       }
    	/**
    	 * paste clipboard contents at cursor position
    	 */  
-       public void pasteText() {
+      public void pasteText() {
          sourceCode.paste();		 
          sourceCode.setCaretVisible(true);
       }		 
    	/**
    	 * select all text
    	 */
-       public void selectAllText() {
+      public void selectAllText() {
          sourceCode.selectAll();
          sourceCode.setCaretVisible(true);
          sourceCode.setSelectionVisible(true);
@@ -391,28 +391,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      /**
       * Undo previous edit
    	*/
-       public void undo() {
+      public void undo() {
          sourceCode.undo();
       }
       
    	/**
    	 * Redo previous edit
    	 */
-       public void redo() {
+      public void redo() {
          sourceCode.redo();
       }
    	
    	/**
    	 *  Update state of Edit menu's Undo menu item.
    	 */ 
-       public void updateUndoState() {
+      public void updateUndoState() {
          mainUI.editUndoAction.updateUndoState();
       }
    	
    	/**
    	 *  Update state of Edit menu's Redo menu item.
    	 */ 
-       public void updateRedoState() {
+      public void updateRedoState() {
          mainUI.editRedoAction.updateRedoState();
       }	
    	 
@@ -421,7 +421,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *
    	 *  @return true if editor is current displaying line numbers, false otherwise.
    	 */
-       public boolean showingLineNumbers() {
+      public boolean showingLineNumbers() {
          return showLineNumbers.isSelected();
       }
    
@@ -430,7 +430,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *
    	 *  @param enable True to enable box, false to disable.
    	 */   	 
-       public void setShowLineNumbersEnabled(boolean enabled) {
+      public void setShowLineNumbersEnabled(boolean enabled) {
          showLineNumbers.setEnabled(enabled);
          //showLineNumbers.setSelected(false); // set off, whether closing or opening
       }
@@ -441,7 +441,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  as text stream offset and will be converted into line and column.
    	 *  @param pos Offset into the text stream of caret.  
    	 */	
-       public void displayCaretPosition(int pos) {
+      public void displayCaretPosition(int pos) {
          displayCaretPosition(convertStreamPositionToLineColumn(pos));
       }
    	 /**
@@ -449,7 +449,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	  *
    	  *  @param p  Point object with x-y (column, line number) coordinates of cursor
    	  */
-       public void displayCaretPosition(Point p) {
+      public void displayCaretPosition(Point p) {
          caretPositionLabel.setText("Line: "+ p.y + " Column: "+ p.x);
       }
    
@@ -461,7 +461,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	  * @return position Its column and line number coordinate as a Point. 
    	  */
       private static final char newline = '\n';
-       public Point convertStreamPositionToLineColumn(int position) {
+      public Point convertStreamPositionToLineColumn(int position) {
          String textStream = sourceCode.getText();
          int line = 1;
          int column = 1;
@@ -485,7 +485,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	  * @param column Position within that line (starts with 1)
    	  * @return corresponding stream position.  Returns -1 if there is no corresponding position.
    	  */
-       public int convertLineColumnToStreamPosition(int line, int column) {
+      public int convertLineColumnToStreamPosition(int line, int column) {
          String textStream = sourceCode.getText();
          int textLength = textStream.length();
          int textLine = 1;
@@ -511,12 +511,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param line The desired line number of this TextPane's text.  Numbering starts at 1, and
     * nothing will happen if the parameter value is less than 1
     */
-       public void selectLine(int line) {
+      public void selectLine(int line) {
          if (line > 0) { 
             int lineStartPosition = convertLineColumnToStreamPosition(line,1);
             int lineEndPosition = convertLineColumnToStreamPosition(line+1,1)-1;
-            sourceCode.select(lineStartPosition, lineEndPosition);
-            sourceCode.setSelectionVisible(true);			        
+            if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
+				
+               lineEndPosition = sourceCode.getText().length()-1;
+            }
+            if (lineStartPosition >= 0) {
+               sourceCode.select(lineStartPosition, lineEndPosition);
+               sourceCode.setSelectionVisible(true);		
+            }	        
          }
       }
    
@@ -528,15 +534,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * nothing will happen if the parameter value is less than 1
     * @param column Desired column at which to place the cursor.
     */
-       public void selectLine(int line, int column) {
-         if (line > 0) { 
-            int lineStartPosition = convertLineColumnToStreamPosition(line,1);
-            int lineEndPosition = convertLineColumnToStreamPosition(line+1,1)-1;
-            sourceCode.select(lineStartPosition, lineEndPosition);
-         	//sourceCode.setCaretPosition(lineStartPosition+column-1);
-            sourceCode.setSelectionVisible(true);			        
-         }
-      }   
+      public void selectLine(int line, int column) {
+         selectLine(line);
+      	// Made one attempt at setting cursor; didn't work but here's the attempt
+      	// (imagine using it in the one-parameter overloaded method above)
+      	//sourceCode.setCaretPosition(lineStartPosition+column-1);        
+      } 
+   	  
     /** Finds next occurrence of text in a forward search of a string. Search begins 
      * at the current cursor location, and wraps around when the end of the string
      * is reached.
@@ -544,7 +548,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      * @param caseSensitive true if search is to be case-sensitive, false otherwise
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
-       public int doFindText(String find, boolean caseSensitive) {
+      public int doFindText(String find, boolean caseSensitive) {
          return sourceCode.doFindText(find, caseSensitive);
       }
    
@@ -563,7 +567,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      * no additional matches.  Returns TEXT_REPLACED_FOUND_NEXT if reaplacement is
      * successful and there is at least one additional match.
      */   
-       public int doReplace(String find, String replace, boolean caseSensitive) {
+      public int doReplace(String find, String replace, boolean caseSensitive) {
          return sourceCode.doReplace(find, replace, caseSensitive);
       }
    
@@ -577,7 +581,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * @param caseSensitive true for case sensitive. false to ignore case
     * @return the number of occurrences that were matched and replaced.
     */   
-       public int doReplaceAll(String find, String replace, boolean caseSensitive) {
+      public int doReplaceAll(String find, String replace, boolean caseSensitive) {
          return sourceCode.doReplaceAll(find, replace, caseSensitive);
       }
    
@@ -587,7 +591,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  Update, if source code is visible, when Font setting changes.
    	 *  This method is specified by the Observer interface.
    	 */
-       public void update(Observable fontChanger, Object arg) {
+      public void update(Observable fontChanger, Object arg) {
          sourceCode.setFont(Globals.getSettings().getEditorFont());
          sourceCode.setLineHighlightEnabled(Globals.getSettings().getBooleanSetting(Settings.EDITOR_CURRENT_LINE_HIGHLIGHTING));
          sourceCode.setCaretBlinkRate(Globals.getSettings().getCaretBlinkRate());
@@ -611,7 +615,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 * Determine font to use for editor line number display, given current
    	 * font for source code.
    	 */
-       private Font getLineNumberFont(Font sourceFont) {
+      private Font getLineNumberFont(Font sourceFont) {
          return  (sourceCode.getFont().getStyle() == Font.PLAIN) 
                  ? sourceFont
             	  : new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());

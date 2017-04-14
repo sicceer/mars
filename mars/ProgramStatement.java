@@ -86,7 +86,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          this.altered = false;
       }
    
-   
+// 	public MIPSprogram getOriginalProgram() {
+// 	  return (originalTokenList != null && originalTokenList.size() > 0) ? originalTokenList.get(0).getOriginalProgram() : null;
+// 	  }
+// 	public int getOriginalSourceLine() {
+// 	  return (originalTokenList != null && originalTokenList.size() > 0) ? originalTokenList.get(0).getOriginalSourceLine() : 0;
+// 	  }   
     //////////////////////////////////////////////////////////////////////////////////
     /**
      * Constructor for ProgramStatement used only for writing a binary machine 

@@ -2,7 +2,7 @@ package mars.assembler;
 import java.util.ArrayList;
 
 /*
-Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -38,16 +38,40 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 public class TokenList implements Cloneable {
-	// instance variables - replace the example below with your own
+	
 	private ArrayList tokenList;
+	private String processedLine;// DPS 03-Jan-2013
 
 	/**
 	 * Constructor for objects of class TokenList
 	 */
 	public TokenList() {
         tokenList = new ArrayList();
+		  processedLine = ""; // DPS 03-Jan-2013
+	}
+	
+	/**
+	 * Use this to record the source line String for this token list 
+	 * after possible modification (textual substitution) during 
+	 * assembly preprocessing.  The modified source will be displayed in
+	 * the Text Segment Display.
+	 * @param line The source line, possibly modified (possibly not)
+	 */
+   // DPS 03-Jan-2013
+   public void setProcessedLine(String line) {
+	   processedLine = line; 
 	}
 
+	/**
+	 * Retrieve the source line String associated with this
+	 * token list.  It may or may not have been modified during
+	 * assembly preprocessing.  
+	 * @return The source line for this token list.
+	 */   // DPS 03-Jan-2013/	
+	public String getProcessedLine() {
+	   return processedLine;
+	}
+	
 	/**
 	 * Returns requested token given position number (starting at 0).
 	 * 
@@ -120,6 +144,23 @@ public class TokenList implements Cloneable {
 		 }
 		 return stringified;
 	}
+
+
+	/**
+	 * Get a String representing the sequence of token types for this list.
+	 * 
+	 * @return     String version of the token types for this list 
+	 * (a blank is inserted after each token type). 
+	 */
+	     
+	 public String toTypeString() {
+	    String stringified = "";
+		 for (int i=0; i<tokenList.size(); i++) {
+		   stringified += ((Token)tokenList.get(i)).getType().toString()+" ";
+		 }
+		 return stringified;
+	}
+
 	/**
 	 * Makes clone (shallow copy) of this token list object.
 	 * 

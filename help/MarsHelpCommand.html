@@ -1,11 +1,11 @@
 <html>
-<title>MARS 4.2 help contents
+<title>MARS 4.3 help contents
 </title>
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.2</h4>
-<h4>August 2011</h4>
+<h4>Release 4.3</h4>
+<h4>January 2013</h4>
 <h4>Using MARS from a command line.</h4>
 </center>
 
@@ -29,11 +29,13 @@ Option has 3 arguments, e.g. <tt>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt
 and <tt>.data</tt>.  Also supports an address range (see <i>m-n</i> below).  Current supported dump formats are <tt>Binary</tt>, <tt>HexText</tt>, <tt>BinaryText</tt>, <tt>AsciiText</tt>.  See examples below.</td><td>3.4</td></tr>
 <tr><td width=40 align="right"><tt>hex</tt></td><td>display memory or register contents in hexadecimal - this is the default. (alternatives are <tt>ascii</tt> and <tt>dec</tt>)</td><td>2.2</td></tr>
 <tr><td width=40 align="right"><tt>h</tt></td><td>display this help.  Use this option by itself and with no filename.</td><td>1.0</td></tr>
+<tr><td width=40 align="right"><tt>ic</tt></td><td>display instruction count; the number of MIPS basic instructions 'executed'</td><td>4.3</td></tr>
 <tr><td width=40 align="right"><tt>mc</tt></td><td>set memory configuration.
 Option has 1 argument, e.g. <tt>mc &lt;config&gt;</tt>.  Argument <tt>&lt;config&gt;</tt> is case-sensitive and its
 possible values are <tt>Default</tt> for the default 32-bit address space, <tt>CompactDataAtZero</tt> for
 a 32KB address space with data segment at address 0, or <tt>CompactTextAtZero</tt>
 for a 32KB address space with text segment at address 0.</td><td>3.7</td></tr>
+<tr><td width=40 align="right"><tt>me</tt></td><td>display MARS messages to standard err instead of standard out.  Allows you to separate MARS messages from MIPS program output using redirection.</td><td>4.3</td></tr>
 <tr><td width=40 align="right"><tt>nc</tt></td><td>copyright notice will not be displayed.  Useful if redirecting or piping program output.</td><td>3.5</td></tr>
 <tr><td width=40 align="right"><tt>np</tt></td><td>pseudo-instructions or extended instruction formats are not permitted.</td><td>3.0</td></tr>
 <tr><td width=40 align="right"><tt>p</tt></td><td>project option - will assemble the specified file and all other assembly files (*.asm; *.s) in its directory.</td><td>3.1</td></tr>
@@ -43,8 +45,9 @@ for a 32KB address space with text segment at address 0.</td><td>3.7</td></tr>
 <tr><td width=40 align="right"><i>n</i></td><td>where <i>n</i> is an integer maximum count of execution steps to simulate.
                   If 0, negative or not specified, there is no maximum.</td><td>1.0</td></tr>
 <tr><td width=40 align="right"><tt>$</tt><i>reg</i></td><td>where <i>reg</i> is number or name (e.g. 5, t3, f10) of register whose 
-                  content to display at end of run.  Even-numbered float register displays both float and double.  Option may be repeated.</td><td>2.2</td></tr>
-<tr><td width=40 align="right"><i>reg_name</i</td><td>where <i>reg_name</i> is the name (e.g. t3, f10) of register whose 
+                  content to display at end of run.  Even-numbered float register displays both float and double.  Option may be repeated.
+				  <em>NOTE: Depending on your command shell, you may need to escape the $, e.g. <tt>\$t3</tt></em></td><td>2.2</td></tr>
+<tr><td width=40 align="right"><i>reg_name</i></td><td>where <i>reg_name</i> is the name (e.g. t3, f10) of register whose 
                   content to display at end of run.  Even-numbered float register displays both float and double.  Option may be repeated. $ not required.</td><td>2.2</td></tr>
 <tr><td width=40 align="right"><i>m</i>-<i>n</i></td><td>memory address range from <i>m</i> to <i>n</i> whose contents to
                   display at end of run. <i>m</i> and <i>n</i> may be decimal or hexadecimal (starts with <tt>0x</tt>),

@@ -263,6 +263,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          tabbedPane.addTab("Directives", createMipsDirectivesHelpPane());
          tabbedPane.addTab("Syscalls", createHTMLHelpPanel("SyscallHelp.html"));
          tabbedPane.addTab("Exceptions", createHTMLHelpPanel("ExceptionsHelp.html"));
+         tabbedPane.addTab("Macros", createHTMLHelpPanel("MacrosHelp.html"));
          operandsScrollPane.setPreferredSize(new Dimension((int)this.getSize().getWidth(), (int) (this.getSize().getHeight()*.2)));
          operandsScrollPane.getVerticalScrollBar().setUnitIncrement(10);
          tabbedPane.setPreferredSize(new Dimension((int)this.getSize().getWidth(), (int) (this.getSize().getHeight()*.6)));

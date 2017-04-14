@@ -4,7 +4,7 @@
    import java.io.*;
 
 /*
-Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -51,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
       private ErrorList errors;
       private MIPSprogram sourceMIPSprogram;
+      private HashMap<String,String> equivalents; // DPS 11-July-2012
    	// The 8 escaped characters are: single quote, double quote, backslash, newline (linefeed),
    	// tab, backspace, return, form feed.  The characters and their corresponding decimal codes:
       private static final String escapedCharacters = "'\"\\ntbrf0";
@@ -61,8 +62,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     */
     
        public Tokenizer() {
+         this(null);
+      }
+   
+   /**
+    *  Constructor for use with existing MIPSprogram.  Designed to be used with Macro feature.
+    *  @param program A previously-existing MIPSprogram object or null if none.
+    */	       
+       public Tokenizer(MIPSprogram program){
          errors = new ErrorList();
-         sourceMIPSprogram = null;
+         sourceMIPSprogram = program;
       }
    
    /**
@@ -76,14 +85,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
        public ArrayList tokenize(MIPSprogram p) throws ProcessingException {
          sourceMIPSprogram = p;
+         equivalents = new HashMap<String,String>(); // DPS 11-July-2012
          ArrayList tokenList = new ArrayList();
-         ArrayList source = p.getSourceList();
+         //ArrayList source = p.getSourceList();
+         ArrayList<SourceLine> source = processIncludes(p, new HashMap<String,String>()); // DPS 9-Jan-2013
+         p.setSourceLineList(source);
          TokenList currentLineTokens;
          String sourceLine;
          for (int i=0; i<source.size(); i++) {
-            sourceLine = (String) source.get(i);
+            sourceLine = source.get(i).getSource(); 
             currentLineTokens = this.tokenizeLine(i+1, sourceLine);
-            tokenList.add(currentLineTokens);
+            tokenList.add(currentLineTokens); 
+            // DPS 03-Jan-2013. Related to 11-July-2012. If source code substitution was made
+         	// based on .eqv directive during tokenizing, the processed line, a String, is 
+         	// not the same object as the original line.  Thus I can use != instead of !equals()
+         	// This IF statement will replace original source with source modified by .eqv substitution.
+         	// Not needed by assembler, but looks better in the Text Segment Display.
+            if (sourceLine.length() > 0 && sourceLine != currentLineTokens.getProcessedLine()) {
+               source.set(i,new SourceLine(currentLineTokens.getProcessedLine(),source.get(i).getMIPSprogram(), source.get(i).getLineNumber())); 
+            } 
          }
          if (errors.errorsOccurred()) {
             throw new ProcessingException(errors);
@@ -91,6 +111,63 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          return tokenList;
       }
    
+   
+     
+   // pre-pre-processing pass through source code to process any ".include" directives.
+   // When one is encountered, the contents of the included file are inserted at that 
+   // point.  If no .include statements, the return value is a new array list but
+   // with the same lines of source code.  Uses recursion to correctly process included
+   // files that themselves have .include.  Plus it will detect and report recursive
+   // includes both direct and indirect.
+   // DPS 11-Jan-2013
+       private ArrayList<SourceLine> processIncludes(MIPSprogram program, Map<String,String> inclFiles) throws ProcessingException {
+         ArrayList source = program.getSourceList();
+         ArrayList<SourceLine> result = new ArrayList<SourceLine>(source.size());
+         for (int i=0; i<source.size(); i++) {
+            String line = (String) source.get(i);
+            TokenList tl = tokenizeLine(program, i+1, line, false);
+            boolean hasInclude = false;
+            for (int ii=0; ii<tl.size(); ii++) {
+               if (tl.get(ii).getValue().equalsIgnoreCase(Directives.INCLUDE.getName()) 
+                      && (tl.size() > ii+1) 
+                      && tl.get(ii+1).getType() == TokenTypes.QUOTED_STRING) {
+                  String filename = tl.get(ii+1).getValue();
+                  filename = filename.substring(1, filename.length()-1); // get rid of quotes
+                  // Handle either absolute or relative pathname for .include file
+                  if (!new File(filename).isAbsolute()) {
+                     filename = new File(program.getFilename()).getParent()+File.separator+filename;
+                  }
+                  if (inclFiles.containsKey(filename)) {
+                     // This is a recursive include.  Generate error message and return immediately.
+                     Token t = tl.get(ii+1);
+                     errors.add(new ErrorMessage(program, t.getSourceLine(),t.getStartPos(), 
+                        "Recursive include of file "+filename));
+                     throw new ProcessingException(errors);
+                  }
+                  inclFiles.put(filename, filename);
+                  MIPSprogram incl = new MIPSprogram();
+                  try {
+                     incl.readSource(filename);
+                  }
+                      catch (ProcessingException p) {
+                        Token t = tl.get(ii+1);
+                        errors.add(new ErrorMessage(program, t.getSourceLine(),t.getStartPos(), 
+                           "Error reading include file "+filename));	
+                        throw new ProcessingException(errors);
+                     }
+                  ArrayList<SourceLine> allLines = processIncludes(incl, inclFiles);
+                  result.addAll(allLines);
+                  hasInclude = true;
+                  break;                  	
+               } 
+            }
+            if (!hasInclude){
+               result.add(new SourceLine(line, program, i+1));//line);
+            }
+         }
+         return result;
+      }
+   	
    /**
     * Used only to create a token list for the example provided with each instruction
     * specification.
@@ -106,7 +183,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    
        public TokenList tokenizeExampleInstruction(String example) throws ProcessingException {
          TokenList result = new TokenList();
-         result = tokenizeLine(0, example);
+         result = tokenizeLine(sourceMIPSprogram, 0, example, false);
          if (errors.errorsOccurred()) {
             throw new ProcessingException(errors);
          }
@@ -141,7 +218,64 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     * Given all the above, it is just as easy to "roll my own" as to use StringTokenizer
     */
    
+   // Modified for release 4.3, to preserve existing API.
        public TokenList tokenizeLine(int lineNum, String theLine) {
+         return tokenizeLine(sourceMIPSprogram, lineNum, theLine, true);
+      }
+
+   /**
+    * Will tokenize one line of source code.  If lexical errors are discovered,
+    * they are noted in an ErrorMessage object which is added to the provided ErrorList
+    * instead of the Tokenizer's error list. Will NOT throw an exception.
+    *
+    * @param lineNum  line number from source code (used in error message)
+    * @param theLine String containing source code
+    * @param callerErrorList errors will go into this list instead of tokenizer's list.
+    * @return the generated token list for that line
+    * 
+    **/
+       public TokenList tokenizeLine(int lineNum, String theLine, ErrorList callerErrorList) {
+         ErrorList saveList = this.errors;
+         this.errors = callerErrorList;
+         TokenList tokens = this.tokenizeLine(lineNum, theLine);
+         this.errors = saveList;
+         return tokens;
+      }
+
+
+   /**
+    * Will tokenize one line of source code.  If lexical errors are discovered,
+    * they are noted in an ErrorMessage object which is added to the provided ErrorList
+    * instead of the Tokenizer's error list. Will NOT throw an exception.
+    *
+    * @param lineNum  line number from source code (used in error message)
+    * @param theLine String containing source code
+    * @param callerErrorList errors will go into this list instead of tokenizer's list.
+    * @param doEqvSubstitutse boolean param set true to perform .eqv substitutions, else false
+    * @return the generated token list for that line
+    * 
+    **/		
+       public TokenList tokenizeLine(int lineNum, String theLine, ErrorList callerErrorList, boolean doEqvSubstitutes) {
+         ErrorList saveList = this.errors;
+         this.errors = callerErrorList;
+         TokenList tokens = this.tokenizeLine(sourceMIPSprogram, lineNum, theLine,doEqvSubstitutes);
+         this.errors = saveList;
+         return tokens;
+      }	
+
+   /**
+    * Will tokenize one line of source code.  If lexical errors are discovered,
+    * they are noted in an ErrorMessage object which is added to the provided ErrorList
+    * instead of the Tokenizer's error list. Will NOT throw an exception.
+    *
+    * @param program  MIPSprogram containing this line of source
+    * @param lineNum  line number from source code (used in error message)
+    * @param theLine String containing source code
+    * @param doEqvSubstitutes boolean param set true to perform .eqv substitutions, else false
+    * @return the generated token list for that line
+    * 
+    **/		
+       public TokenList tokenizeLine(MIPSprogram program, int lineNum, String theLine, boolean doEqvSubstitutes) {
          TokenTypes tokenType;
          TokenList result = new TokenList();
          if (theLine.length() == 0)
@@ -153,15 +287,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          char[] token = new char[line.length];
          int tokenPos = 0;
          int tokenStartPos = 1;
-         boolean insideQuotedString = false;
-         if (Globals.debug) System.out.println("source line --->"+theLine+"<---");
+         boolean insideQuotedString = false;  
+         if (Globals.debug) 
+            System.out.println("source line --->"+theLine+"<---");
       // Each iteration of this loop processes one character in the source line.
          while (linePos < line.length) {
             c = line[linePos];
             if (insideQuotedString) { // everything goes into token
                token[tokenPos++] = c;
                if (c == '"' && token[tokenPos-2] != '\\') { // If quote not preceded by backslash, this is end
-                  this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                  this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                   tokenPos = 0;
                   insideQuotedString = false;
                } 
@@ -170,13 +305,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                switch(c) {
                   case '#' :  // # denotes comment that takes remainder of line
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      tokenStartPos = linePos+1;
                      tokenPos = line.length-linePos;
                      System.arraycopy(line, linePos, token, 0, tokenPos);
-                     this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                     this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                      linePos = line.length;
                      tokenPos = 0;
                      break;
@@ -184,7 +319,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   case '\t':
                   case ',' : // space, tab or comma is delimiter
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      break;
@@ -203,7 +338,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      }
                   	 // End of REAL hack.  
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      tokenStartPos = linePos+1;
@@ -211,7 +346,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      if ( !((result.isEmpty() || ((Token)result.get(result.size()-1)).getType() != TokenTypes.IDENTIFIER) &&
                            (line.length >= linePos+2 && Character.isDigit(line[linePos+1]))) ) {
                            // treat it as binary.....
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      break; 
@@ -220,17 +355,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   case '(' :
                   case ')' :
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      tokenStartPos = linePos+1;
                      token[tokenPos++] = c;
-                     this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                     this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                      tokenPos = 0;
                      break; 
                   case '"' : // we're not inside a quoted string, so start a new token...
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
                      tokenStartPos = linePos+1;
@@ -239,10 +374,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      break;
                   case '\'' : // start of character constant (single quote).
                      if (tokenPos > 0) {
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                      }
-							// Our strategy is to process the whole thing right now...
+                  	// Our strategy is to process the whole thing right now...
                      tokenStartPos = linePos+1;
                      token[tokenPos++] = c; // Put the quote in token[0]
                      int lookaheadChars = line.length - linePos - 1;
@@ -257,7 +392,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      token[tokenPos++] = c; // grab third character, put it in token[2]
                      // Process if we've either reached second, non-escaped, quote or end of line.
                      if (c == '\'' && token[1] != '\\' || lookaheadChars==2) { 
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                         tokenStartPos = linePos+1;
                         break;
@@ -269,7 +404,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      token[tokenPos++] = c; // grab fourth character, put it in token[3]
                   	// Process, if this is ending quote for escaped character or if at end of line
                      if (c == '\'' || lookaheadChars==3) { 
-                        this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                        this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                         tokenPos = 0;
                         tokenStartPos = linePos+1;
                         break;
@@ -286,7 +421,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         }
                      }
                   	// process no matter what...we either have a valid character by now or not
-                     this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+                     this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
                      tokenPos = 0;
                      tokenStartPos = linePos+1;
                      break;																			
@@ -300,30 +435,88 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             linePos++;
          }  // while
          if (tokenPos > 0) {
-            this.processCandidateToken(token, lineNum, theLine, tokenPos, tokenStartPos, result);
+            this.processCandidateToken(token, program, lineNum, theLine, tokenPos, tokenStartPos, result);
             tokenPos = 0;
+         }
+         if (doEqvSubstitutes) {
+            result = processEqv(program, lineNum, theLine, result); // DPS 11-July-2012
          }
          return result;
       }
    
-      /**
-    * Will tokenize one line of source code.  If lexical errors are discovered,
-    * they are noted in an ErrorMessage object which is added to the provided ErrorList
-    * instead of the Tokenizer's error list. Will NOT throw an exception.
-    *
-    * @param lineNum  line number from source code (used in error message)
-    * @param theLine String containing source code
-    * @param callerErrorList errors will go into this list instead of tokenizer's list.
-    * @return the generated token list for that line
-    * 
-    **/
-       public TokenList tokenizeLine(int lineNum, String theLine, ErrorList callerErrorList) {
-         ErrorList saveList = this.errors;
-         this.errors = callerErrorList;
-         TokenList tokens = this.tokenizeLine(lineNum, theLine);
-         this.errors = saveList;
-         return tokens;
+      // Process the .eqv directive, which needs to be applied prior to tokenizing of subsequent statements.
+   	// This handles detecting that theLine contains a .eqv directive, in which case it needs
+   	// to be added to the HashMap of equivalents.  It also handles detecting that theLine
+   	// contains a symbol that was previously defined in an .eqv directive, in which case
+   	// the substitution needs to be made.
+   	// DPS 11-July-2012
+       private TokenList processEqv(MIPSprogram program, int lineNum, String theLine, TokenList tokens) {
+      	// See if it is .eqv directive.  If so, record it...
+      	// Have to assure it is a well-formed statement right now (can't wait for assembler).
+      
+         if (tokens.size()>2 && (tokens.get(0).getType() == TokenTypes.DIRECTIVE || tokens.get(2).getType() == TokenTypes.DIRECTIVE)) {
+            // There should not be a label but if there is, the directive is in token position 2 (ident, colon, directive).
+            int dirPos = (tokens.get(0).getType() == TokenTypes.DIRECTIVE) ? 0 : 2; 
+            if (Directives.matchDirective(tokens.get(dirPos).getValue()) == Directives.EQV) {
+               // Get position in token list of last non-comment token
+               int tokenPosLastOperand = tokens.size() - ((tokens.get(tokens.size()-1).getType()==TokenTypes.COMMENT)? 2 : 1);
+               // There have to be at least two non-comment tokens beyond the directive
+               if (tokenPosLastOperand < dirPos+2) {
+                  errors.add(new ErrorMessage(program, lineNum,tokens.get(dirPos).getStartPos(), 
+                       "Too few operands for "+Directives.EQV.getName()+" directive"));
+                  return tokens;
+               }
+               // Token following the directive has to be IDENTIFIER
+               if (tokens.get(dirPos+1).getType() != TokenTypes.IDENTIFIER) {
+                  errors.add(new ErrorMessage(program, lineNum,tokens.get(dirPos).getStartPos(), 
+                       "Malformed "+Directives.EQV.getName()+" directive"));
+                  return tokens;
+               }
+               String symbol = tokens.get(dirPos+1).getValue();
+            	// Make sure the symbol is not contained in the expression.  Not likely to occur but if left
+            	// undetected it will result in infinite recursion.  e.g.  .eqv ONE, (ONE)
+               for (int i=dirPos+2; i<tokens.size(); i++) {
+                  if (tokens.get(i).getValue().equals(symbol)) {
+                     errors.add(new ErrorMessage(program, lineNum,tokens.get(dirPos).getStartPos(), 
+                        "Cannot substitute "+symbol+" for itself in "+Directives.EQV.getName()+" directive"));
+                     return tokens;
+                  }
+               }
+               // Expected syntax is symbol, expression.  I'm allowing the expression to comprise
+               // multiple tokens, so I want to get everything from the IDENTIFIER to either the
+            	// COMMENT or to the end.
+               int startExpression = tokens.get(dirPos+2).getStartPos();
+               int endExpression = tokens.get(tokenPosLastOperand).getStartPos() + tokens.get(tokenPosLastOperand).getValue().length();
+               String expression = theLine.substring(startExpression-1,endExpression-1);
+            	// Symbol cannot be redefined - the only reason for this is to act like the Gnu .eqv
+               if (equivalents.containsKey(symbol) && !equivalents.get(symbol).equals(expression)) { 
+                  errors.add(new ErrorMessage(program, lineNum,tokens.get(dirPos+1).getStartPos(), 
+                       "\""+symbol+"\" is already defined"));
+                  return tokens;
+               }
+               equivalents.put(symbol, expression);
+               return tokens;
+            }
+         }
+      	// Check if a substitution from defined .eqv is to be made.  If so, make one.
+         boolean substitutionMade = false;
+         for (int i=0; i<tokens.size(); i++) {
+            Token token = tokens.get(i);
+            if (token.getType() == TokenTypes.IDENTIFIER && equivalents != null && equivalents.containsKey(token.getValue())) {
+               // do the substitution
+               String sub = equivalents.get(token.getValue());
+               int startPos = token.getStartPos(); 
+               theLine = theLine.substring(0,startPos-1) + sub + theLine.substring(startPos+token.getValue().length()-1);
+               substitutionMade = true;             	// one substitution per call.  If there are multiple, will catch next one on the recursion
+               break; 
+            }
+         }
+         tokens.setProcessedLine(theLine); // DPS 03-Jan-2013. Related to changes of 11-July-2012.
+      
+         return (substitutionMade) ? tokenizeLine(lineNum, theLine) : tokens;
       }
+   	
+	
    
    /** 
     * Fetch this Tokenizer's error list.
@@ -336,17 +529,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 
    
    // Given candidate token and its position, will classify and record it.
-       private void processCandidateToken(char[] token, int line, String theLine, int tokenPos, int tokenStartPos, TokenList tokenList) {
+       private void processCandidateToken(char[] token, MIPSprogram program, int line, String theLine, 
+       int tokenPos, int tokenStartPos, TokenList tokenList) {
          String value = new String(token, 0, tokenPos);
          if (value.length() > 0 && value.charAt(0)=='\'') value = preprocessCharacterLiteral(value);
          TokenTypes type = TokenTypes.matchTokenType(value);
          if (type == TokenTypes.ERROR) {
-            errors.add(new ErrorMessage(this.sourceMIPSprogram, line, tokenStartPos, 
+            errors.add(new ErrorMessage(program, line, tokenStartPos, 
                        theLine+"\nInvalid language element: "+value));
          }
-         Token toke = new Token(type, value, this.sourceMIPSprogram, line, tokenStartPos);
+         Token toke = new Token(type, value, program, line, tokenStartPos);
          tokenList.add(toke);
-       //System.out.println("got token --->"+value+"<--- at line: "+line+" position: "+tokenStartPos+" token type: "+type);
          return;
       }
    	

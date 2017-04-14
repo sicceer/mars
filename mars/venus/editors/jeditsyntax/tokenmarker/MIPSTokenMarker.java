@@ -45,7 +45,8 @@
             tokenLabels[Token.KEYWORD2] = "Assembler directive";
             tokenLabels[Token.KEYWORD3] = "Register";
             tokenLabels[Token.INVALID]  = "In-progress, invalid";
-         }
+            tokenLabels[Token.MACRO_ARG]= "Macro parameter";
+		   }
          return tokenLabels;
       }
    
@@ -62,6 +63,7 @@
             tokenExamples[Token.KEYWORD2] = ".text";
             tokenExamples[Token.KEYWORD3] = "$zero";
             tokenExamples[Token.INVALID]  = "\"Regi";
+            tokenExamples[Token.MACRO_ARG]= "%arg";
          }
          return tokenExamples;
       }
@@ -164,8 +166,9 @@
                         break;
                      default:
                         backslash = false;
+								// . and $ added 4/6/10 DPS; % added 12/12 M.Sekhavat
                         if(!Character.isLetterOrDigit(c)
-                        && c != '_' && c != '.' && c != '$') // . and $ added 4/6/10 DPS
+                        && c != '_' && c != '.' && c != '$' && c!='%') 
                            doKeyword(line,i,c);
                         break;
                   }

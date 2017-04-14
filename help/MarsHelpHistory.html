@@ -4,11 +4,54 @@
 <body>
 <center>
 <h3>MARS - Mips Assembly and Runtime Simulator</h3>
-<h4>Release 4.2</h4>
-<h4>August 2011</h4>
+<h4>Release 4.3</h4>
+<h4>January 2013</h4>
 <h4>MARS Release History</h4>
 </center>
 
+<p>Mars 4.3 was released in January 2013.  Enhancements and bug fixes include:
+<ul>
+<li>
+A macro facility has been developed by Mr. Mohammad Sekhavat.  It is documented
+in the MIPS help tab Macros.  
+</li>
+<li>
+A text substitution facility similar to #define has been developed using
+the new <tt>.eqv</tt> directive.  It is also documented in the MIPS help
+tab Macros.
+</li>
+<li>
+A text insertion facility similar to #include has been developed
+using the new <tt>.include</tt> directive.  It is also documented in the
+MIPS help tab Macros.  It permits a macro to be defined in one file and
+included wherever needed.
+</li>
+<li>Two new command mode options are now available: ic (Instruction Count) to
+display a count of statements executed upon program termination, and me
+(Messages to Error) to send MARS messages to System.err instead of System.out.
+Allows you to separate MARS messages from MIPS output using redirection, 
+if desired.  Redirect a stream in DOS with "1>" or "2>" for out and err, 
+respectively. To redirect both, use "> filename 2>&amp;1"
+</li>
+<li>Changed the default font family settings from Courier New to Monospaced.
+This was in response to reports of Macs displaying left parentheses and vertical 
+bars incorrectly.   
+</li>
+<li>Changed the way operands for .byte and .half directives are range-checked.
+It will now work like SPIM, which accepts any operand value but truncates high-end bits as
+needed to fit the 1 (byte) or 2 (half) byte field.  We'll still issue a warning
+but not an error.
+</li>
+<li>For file reads, syscall 14, file descriptor 0 is always open for standard input.  For file
+writes, syscall 15, file descriptors 1 and 2 are always open for standard output and 
+standard error, respectively.  This permits you to write I/O code that will
+work either with files or standard I/O.  When using the IDE, standard input and output 
+are performed in the Run I/O tab.  File descriptors for regular files are
+allocated starting with file descriptor 3.  
+</li>
+
+
+</ul>
 <p>Mars 4.2 was released in August 2011.  Enhancements and bug fixes include:
 <ul>
 <li>Performing a Save operation on a new file will now use the file's tab
@@ -147,8 +190,8 @@ the exception handler setting does not prevent the same error from occuring on t
 <p>Mars 4.0 was released in August 2010.  Enhancements and bug fixes include:
 <ul>
 
-<li><i>New Text Editor:</i> Mars features an entirely new integrated text editor.  Multiple files can be open
-simulataneously, each in its own tab.  The editor now features language-aware 
+<li><i>New Text Editor:</i> Mars features an entirely new integrated text editor.  It creates a new tab for each file
+as it is opened.  The editor now features language-aware 
 color highlighting of many MIPS assembly language elements with customizable 
 colors and styles.  It also features automatic context-sensitive popup instruction 
 guides.  There are two levels: one with help and autocompletion of instruction names

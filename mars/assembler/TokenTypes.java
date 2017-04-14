@@ -67,6 +67,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       public static final TokenTypes MINUS         = new TokenTypes("MINUS");
       public static final TokenTypes COLON         = new TokenTypes("COLON");
       public static final TokenTypes ERROR         = new TokenTypes("ERROR");
+      public static final TokenTypes MACRO_PARAMETER = new TokenTypes("MACRO_PARAMETER");
    
       private String descriptor;
    
@@ -126,7 +127,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   return TokenTypes.MINUS;
             }
          }
-          
+
+       // See if it is a macro parameter  
+         if (Macro.tokenIsMacroParameter(value, false))
+        	 return TokenTypes.MACRO_PARAMETER;
+			           
        // See if it is a register
          Register reg = RegisterFile.getUserRegister(value);
          if (reg != null) 

@@ -281,6 +281,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                		   // only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
                }
          }
+			assemble.setCaretPosition(assemble.getDocument().getLength());
          setSelectedComponent(assembleTab);
       }
    	

@@ -5,7 +5,7 @@
    import java.util.*;
 	
 	/*
-Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -59,6 +59,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       private static final int O_TRUNC  = 0x00000400; // 1024
       private static final int O_EXCL   = 0x00000800; // 2048
    	
+   	// standard I/O channels
+      private static final int STDIN  = 0;
+      private static final int STDOUT = 1;
+      private static final int STDERR = 2;
    
       // Will use one buffered reader for all keyboard/redirected/piped input.
    	// Added by DPS 28 Feb 2008.  See getInputReader() below.
@@ -218,7 +222,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          }
       	
          if (input.length() > maxLength) {
-			   // Modified DPS 13-July-2011.  Originally: return input.substring(0, maxLength);
+            // Modified DPS 13-July-2011.  Originally: return input.substring(0, maxLength);
             return (maxLength <= 0) ? "" : input.substring(0, maxLength);
          } 
          else {
@@ -255,7 +259,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                input = Globals.getGui().getMessagesPane().getInputString(1);
             }
          }
-      
          // The whole try-catch is not really necessary in this case since I'm
       	// just propagating the runtime exception (the default behavior), but 
       	// I want to make it explicit.  The client needs to catch it.
@@ -280,10 +283,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      * @param lengthRequested number of bytes to write
      * @return number of bytes written, or -1 on error
      */
+   
        public static int writeToFile(int fd, byte[] myBuffer, int lengthRequested)
       {
-         //System.out.println("Mars.SystemIO.writeToFile: starting, myBuffer contains:");
-         // for (int ii = 0; ii < lengthRequested; ii++)  System.out.println("      myBuffer[" + ii + "] = " + myBuffer[ii]);
+       /////////////// DPS 8-Jan-2013  ////////////////////////////////////////////////////
+       /// Write to STDOUT or STDERR file descriptor while using IDE - write to Messages pane. 
+         if ((fd==STDOUT || fd==STDERR) && Globals.getGui() != null) {
+            String data = new String(myBuffer);
+            Globals.getGui().getMessagesPane().postRunMessage(data);
+            return data.length();
+         }
+       ///////////////////////////////////////////////////////////////////////////////////
+       //// When running in command mode, code below works for either regular file or STDOUT/STDERR
       
          if (!FileIOData.fdInUse(fd, 1)) // Check the existence of the "write" fd
          {
@@ -291,11 +302,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     "File descriptor " + fd + " is not open for writing");
             return -1;
          }
-        // retrieve FileOutputStream from storage
-         FileOutputStream outputStream = (FileOutputStream) FileIOData.getStreamInUse(fd);
+         // retrieve FileOutputStream from storage
+         OutputStream outputStream = (OutputStream) FileIOData.getStreamInUse(fd);
          try
          {
-         
             // Oct. 9 2005 Ken Vollmar
             // Observation: made a call to outputStream.write(myBuffer, 0, lengthRequested)
             //     with myBuffer containing 6(ten) 32-bit-words <---> 24(ten) bytes, where the
@@ -310,10 +320,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             // the number of bytes requested, even though those bytes include many ZERO values.
             for (int ii = 0; ii < lengthRequested; ii++)
             {
-               //System.out.println("     writing out one byte:  myBuffer[" + ii + "] = " + myBuffer[ii]);
-               outputStream.write(myBuffer[ii]); // write is a void method -- no verification value returned
+               outputStream.write(myBuffer[ii]); 
             }
-         
+            outputStream.flush();// DPS 7-Jan-2013
          } 
              catch (IOException e)
             {
@@ -342,8 +351,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      */
        public static int readFromFile(int fd, byte[] myBuffer, int lengthRequested)
       {
-         int retValue = -1;
-      
+         int retValue = -1;  
+       /////////////// DPS 8-Jan-2013  //////////////////////////////////////////////////
+       /// Read from STDIN file descriptor while using IDE - get input from Messages pane. 
+         if (fd==STDIN && Globals.getGui() != null) {
+            String input = Globals.getGui().getMessagesPane().getInputString(lengthRequested);
+            byte[] bytesRead = input.getBytes();;
+            for (int i=0; i < myBuffer.length; i++) {
+               myBuffer[i] = (i < bytesRead.length) ? bytesRead[i] : 0 ;
+            }
+            return Math.min(myBuffer.length, bytesRead.length);
+         }
+       ////////////////////////////////////////////////////////////////////////////////////
+       //// When running in command mode, code below works for either regular file or STDIN
+       
          if (!FileIOData.fdInUse(fd, 0)) // Check the existence of the "read" fd
          {
             fileErrorString = new String(
@@ -351,7 +372,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return -1;
          }
         // retrieve FileInputStream from storage
-         FileInputStream InputStream = (FileInputStream) FileIOData.getStreamInUse(fd);
+         InputStream InputStream = (InputStream) FileIOData.getStreamInUse(fd);
          try
          {
             // Reads up to lengthRequested bytes of data from this Input stream into an array of bytes.
@@ -374,7 +395,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     "IndexOutOfBoundsException on read of file with fd" + fd);
                return -1;
             }
-      
          return retValue;
       
       } // end readFromFile
@@ -405,7 +425,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          fdToUse = FileIOData.nowOpening(filename, flags);
          retValue = fdToUse; // return value is the fd
          if (fdToUse < 0)
-         {
+         { 
             return -1;
          }   // fileErrorString would have been set
          
@@ -440,7 +460,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   retValue = -1;
                }
          }
-      
          return retValue; // return the "file descriptor"
       
       }
@@ -451,7 +470,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
      */
        public static void closeFile(int fd)
       {
-      // System.out.println("Mars.SystemIO.closeFile: called with fd = " + fd);
          FileIOData.close(fd);
       }
    
@@ -504,7 +522,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             {
                close(i);
             }
-         
+            setupStdio();
+         }
+      	// DPS 8-Jan-2013
+          private static void setupStdio() {
+            fileNames[STDIN]  = "STDIN";
+            fileNames[STDOUT] = "STDOUT";
+            fileNames[STDERR] = "STDERR";
+            fileFlags[STDIN]  = SystemIO.O_RDONLY;
+            fileFlags[STDOUT] = SystemIO.O_WRONLY;
+            fileFlags[STDERR] = SystemIO.O_WRONLY;
+            streams[STDIN]  = System.in;
+            streams[STDOUT] = System.out;
+            streams[STDERR] = System.err;
+            System.out.flush();
+            System.err.flush();
          }
       
         // Preserve a stream that is in use
@@ -562,9 +594,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // made an error in the call, it will come back to him.
           private static void close(int fd)
          {
-         //System.out.println("Mars.SystemIO.FileIOData.close: called with fd = " + fd);
-         //System.out.println("Mars.SystemIO.FileIOData.close: fileNames[" + fd + "] is " + fileNames[fd] );
-            if (fd < 0 || fd >= SYSCALL_MAXFILES) // Invalid fd
+            // Can't close STDIN, STDOUT, STDERR, or invalid fd
+            if (fd <= STDERR || fd >= SYSCALL_MAXFILES) 
                return;
                
             fileNames[fd] = null;
@@ -572,7 +603,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             if (streams[fd] != null)
             {
                int keepFlag = fileFlags[fd];
-            // System.out.println("Mars.SystemIO.FileIOData.close: streams[" + fd + "] is " + streams[fd] );
                Object keepStream = streams[fd];
                fileFlags[fd] = -1;
                streams[fd] = null;
@@ -580,7 +610,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   if (keepFlag == O_RDONLY)
                      ((FileInputStream)keepStream).close();
                   else
-                     ((FileOutputStream)keepStream).close();  // Oct. 9 2005 Ken Vollmar  This was incorrectly FileInputStream
+                     ((FileOutputStream)keepStream).close();
                } 
                    catch (IOException ioe) {
                   // not concerned with this exception
@@ -597,9 +627,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           private static int nowOpening(String filename, int flag)
          {
             int i = 0;
-            // DEBUG
-            // System.out.println("Mars.SystemIO.FileIOData.nowOpening: filename is " + filename);
-            // System.out.println("Mars.SystemIO.FileIOData.nowOpening: flag is " + flag);
             if (filenameInUse(filename))
             {
                fileErrorString = new String(
@@ -627,9 +654,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         + " exceeds maximum open file limit of "
                         + SYSCALL_MAXFILES);
                return -1;
-            }
-         
-            // System.out.println("Mars.SystemIO.FileIOData.nowOpening: " + filename + " fits in table at [" + i + "]");
+            }    
          
             // Must be OK -- put filename in table
             fileNames[i] = new String(filename); // our table has its own copy of filename

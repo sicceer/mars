@@ -190,8 +190,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 *  Must match key by list position shown above.
    	 */
    
-      private static final String[] defaultFontFamilySettingsValues = { "Courier New","Courier New","Courier New",
-         "Courier New","Courier New","Courier New","Courier New"
+      // DPS 3-Oct-2012
+      // Changed default font family from "Courier New" to "Monospaced" after receiving reports that Mac were not
+		// correctly rendering the left parenthesis character in the editor or text segment display.
+		// See http://www.mirthcorp.com/community/issues/browse/MIRTH-1921?page=com.atlassian.jira.plugin.system.issuetabpanels:all-tabpanel
+      private static final String[] defaultFontFamilySettingsValues = { "Monospaced","Monospaced","Monospaced",
+         "Monospaced","Monospaced","Monospaced","Monospaced"
          };
       private static final String[] defaultFontStyleSettingsValues = {"Plain", "Plain", "Plain", "Plain", 
          "Plain", "Plain", "Plain"
